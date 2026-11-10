@@ -353,6 +353,83 @@ body.introMode .intro{display:flex;align-items:center;justify-content:center}
 @keyframes ring2{50%{background:var(--brand);border-color:var(--brand)}}
 @media (prefers-reduced-motion:reduce){.pipes path{stroke-dashoffset:0}.intro *,.intro *::before,.intro *::after{animation:none!important;opacity:1!important}.g-hand{transform:rotate(40deg)}}
 @media (max-width:720px){.startTop{padding:8px 10px!important;font-size:12px!important}}
+
+/* ══ Телефон ══ */
+.swipeHint{display:none}
+@media (max-width:720px){
+  body{font-size:14.5px}
+  /* шапка компактна */
+  .hrow .in{padding-block:6px;gap:10px}
+  .logo{padding:2px 4px}.logo img{height:30px!important}
+  .phone div{display:none}.phone::before{width:32px;height:32px;background-size:16px}
+  .obar .in{min-height:40px;gap:4px}
+  .obtn{padding:6px 8px;font-size:12px}
+  #sideBtn{font-size:0;gap:0;padding:6px}#sideBtn svg{width:22px;height:22px}
+  .startTop{padding:7px 12px!important;font-size:12px!important}
+  /* шапка в один рядок: ☰ · логотип · телефон · Почати роботу */
+  header{display:flex;align-items:center;gap:8px;padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(12px,env(safe-area-inset-left,0px));border-bottom:2px solid var(--brand)}
+  header .hrow,header .hrow .in,header .obar,header .obar .in{display:contents}
+  #sideBtn{order:1}.logo{order:2}.aibadge,.otitle,#capsBtn{display:none!important}.phone{order:3;margin-left:auto}#startBtn{order:4}
+  /* головна */
+  .hero{gap:4px;padding-top:0}
+  .hero h1{font-size:22px;line-height:28px}
+  .hero .slogan{font-size:13px;line-height:18px}
+  .hero p{font-size:13.5px}
+  .swipeHint{display:block;font-size:12px;font-weight:600;color:var(--muted);text-align:right;margin-bottom:-6px}
+  .cards{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px;margin-inline:-16px;padding-inline:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .cards::-webkit-scrollbar{display:none}
+  .cards .card{flex:0 0 82%;scroll-snap-align:center;padding:12px}
+  .card h3{font-size:16px;line-height:22px}
+  .card p{font-size:13px}
+  .card .btn,.card button{padding:7px 12px;font-size:13px}
+  #feed .in{padding-block:12px;gap:10px}
+  /* повідомлення */
+  .bub{padding:9px 12px;font-size:14px}
+  .think{padding:10px 12px;gap:10px}.core{width:38px;height:38px}.tip{font-size:12.5px}
+  /* низ: режими однією стрічкою, поле без зуму iOS */
+  footer .in{gap:6px;padding-top:8px}
+  .modes{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+  .modes::-webkit-scrollbar{display:none}
+  .modes button{flex:none;font-size:12px;padding:5px 10px}
+  .comp{padding:4px;gap:4px}
+  .comp textarea{font-size:16px;padding:7px 4px}
+  .ic{width:38px;height:38px}
+  .legal{display:none}
+  .err,#catStatus{font-size:12px;padding:6px 9px}
+  /* результат */
+  .res{padding:10px;gap:8px}
+  .res h4{font-size:16px;line-height:22px}
+  .res .row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .res .row::-webkit-scrollbar{display:none}
+  .res .row>*{flex:none}
+  .res .row button{padding:6px 10px;font-size:12.5px}
+  .res .row.between{flex-wrap:wrap}
+  .tabs button{font-size:12px;padding:4px 9px}
+  table.spec{min-width:0}
+  table.spec thead{display:none}
+  table.spec tbody,table.spec tr,table.spec td{display:block}
+  table.spec tr{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"name name name x" "code art art art" "qty unit . sum";gap:4px 8px;padding:10px;border-top:1px solid var(--line)}
+  table.spec tr:first-child{border-top:0}
+  table.spec td{border:0;padding:0}
+  table.spec td:nth-child(1),table.spec td:nth-child(7){display:none}
+  table.spec td:nth-child(2){grid-area:code;font-size:12.5px}
+  table.spec td:nth-child(3){grid-area:art;font-size:12px;align-self:center}
+  table.spec td:nth-child(4){grid-area:name;font-size:13.5px;line-height:19px}
+  table.spec td:nth-child(5){grid-area:qty}
+  table.spec td:nth-child(5) input{width:72px;padding:6px;font-size:16px}
+  table.spec td:nth-child(6){grid-area:unit;align-self:center}
+  table.spec td:nth-child(8){grid-area:sum;align-self:center;font-weight:700}
+  table.spec td:nth-child(9){grid-area:x;align-self:start}
+  /* вікна знизу з «ручкою», свайп вниз закриває */
+  .sheet{align-items:flex-end!important;padding:0!important}
+  .sheet>div,.capsIn{max-height:88%!important;width:100%;padding-top:22px!important;position:relative}
+  .sheet>div::before,.capsIn::after{content:"";position:absolute;top:8px;left:50%;width:42px;height:4px;margin-left:-21px;border-radius:9999px;background:var(--ctl);opacity:.6}
+  .capsT{font-size:20px;line-height:26px}
+  .cblk{padding:12px}.cblk ul{font-size:13px}
+  /* презентація */
+  .i-lead{font-size:13.5px}
+  .i-start{padding:12px 22px;font-size:15px}
+}
 </style>
 <style>body{margin:0;padding-top:env(safe-area-inset-top,0px)}</style>
 </head>
@@ -407,6 +484,7 @@ body.introMode .intro{display:flex;align-items:center;justify-content:center}
     <p>Рахую товар, роблю проєкти інженерних мереж і підбираю сантехніку з прайсу «Гарячої Точки». Оберіть, з чого почати:</p>
     <div><button id="capsBtn2" class="capsLink">Що вміє помічник →</button></div>
   </section>
+  <div class="swipeHint">Гортайте картки →</div>
   <div class="cards" id="cards">
     <div class="card"><div class="chead"><div class="n">1</div><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg></div><h3>Порахувати товар</h3><p>Киньте фото, файл або просто текст матеріалів — я підберу коди й порахую суму.</p><div class="row"><button class="btn" data-start="calc">Почати</button><button data-ex="calc">Приклад</button></div></div>
     <div class="card"><div class="chead"><div class="n">2</div><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M8 21v-6h8v6M3 12h18"/></svg></div><h3>Проєкт інженерних мереж</h3><p>Киньте дизайн-проєкт — я розрахую воду, каналізацію, опалення, електрику та матеріали.</p><div class="row"><button class="btn" data-start="project">Почати</button><button data-ex="project">Приклад</button></div></div>
@@ -740,7 +818,7 @@ function resEl(m){
   const total = r.items.reduce((a,i)=>a+i.price*i.qty,0);
   el.innerHTML = `<div class="row between"><h4>${esc(r.title)}</h4><span class="small">Разом: <span class="sum">${fmt(total)} грн</span> · ціни на 05.07.2026</span></div>
     <div class="row tabs"></div>
-    <div class="tbox"><table><thead><tr><th>№</th><th>Код</th><th>Артикул</th><th>Найменування</th><th>К-сть</th><th>Од.</th><th style="text-align:right">Ціна</th><th style="text-align:right">Сума</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="tbox"><table class="spec"><thead><tr><th>№</th><th>Код</th><th>Артикул</th><th>Найменування</th><th>К-сть</th><th>Од.</th><th style="text-align:right">Ціна</th><th style="text-align:right">Сума</th><th></th></tr></thead><tbody></tbody></table></div>
     <div class="row"><button class="btn" data-c="t2">Код + к-сть (1С)</button><button data-c="t1">Назва + к-сть</button><button data-c="t3">Вся таблиця</button><button data-x>Excel</button><span class="small">Розділ: <span class="sum">${fmt(rows.reduce((a,i)=>a+i.price*i.qty,0))} грн</span></span></div>`;
   for(const [c,l] of CATS){ const n = r.items.filter(i=>i.category===c).length; if(!n) continue;
     const b=document.createElement('button'); b.className = r.tab===c?'on':''; b.textContent = `${l} · ${n}`; b.onclick=()=>{ r.tab=c; save(); el.replaceWith(resEl(m)); }; el.querySelector('.tabs').appendChild(b); }
@@ -840,6 +918,23 @@ $('capsBtn').onclick = () => {
   $('hero').hidden = false; $('cards').hidden = false; $('feed').scrollTop = 0;
   const c = $('cards'); c.classList.remove('callout'); void c.offsetWidth; c.classList.add('callout'); setTimeout(() => c.classList.remove('callout'), 3200);
 };
+
+
+// ── Свайпи: з лівого краю — «Мої чати», вліво — закрити, вниз — закрити вікно ──
+(function(){
+  let x0=null, y0=null, t0=0, inner=null;
+  document.addEventListener('touchstart', e => { const t=e.touches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); const sh=e.target.closest('.sheet>div'); inner = sh ? sh.scrollTop : null; }, {passive:true});
+  document.addEventListener('touchend', e => {
+    if(x0===null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0, fast=Date.now()-t0<650;
+    if(fast && Math.abs(dx)>70 && Math.abs(dy)<60){
+      if(dx>0 && x0<36 && $('side').hidden && !document.querySelector('.sheet:not([hidden])')) openSide();
+      else if(dx<0 && !$('side').hidden) closeSide();
+    } else if(fast && dy>90 && Math.abs(dx)<70 && inner!==null && inner<=0){
+      const open=[...document.querySelectorAll('.sheet:not([hidden])')].pop(); if(open) open.hidden=true;
+    }
+    x0=null;
+  }, {passive:true});
+})();
 
 // ── Старт ──
 (function(){
