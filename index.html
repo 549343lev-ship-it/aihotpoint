@@ -358,7 +358,7 @@ footer{background:var(--surface);border-top:1px solid var(--line)}
     <textarea id="txt" rows="1" placeholder="Напишіть повідомлення…"></textarea>
     <button class="ic btn" id="send" title="Надіслати" aria-label="Надіслати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
-  <div class="legal">Ціни — роздрібні з прайсу «Гарячої Точки». Остаточну ціну й наявність уточнюйте в менеджера · гаряча лінія 0-800-305-777 · Пн–Пт 9:00–18:00, Сб 9:00–15:00</div>
+  <div class="legal">Ціни роздрібні, з прайсу «Гарячої Точки» станом на 05.07.2026 (тимчасово, прайс оновлюється). Остаточну ціну й наявність уточнюйте в менеджера · гаряча лінія 0-800-305-777 · Пн–Пт 9:00–18:00, Сб 9:00–15:00</div>
   <input id="file" type="file" accept="image/*,application/pdf,.xlsx,.xls,.csv,.txt" hidden>
 </div></footer>
 
@@ -668,7 +668,7 @@ function resEl(m){
   const r = m.res, el = document.createElement('div'); el.className = 'res';
   const rows = r.items.filter(i=>i.category===r.tab), found = rows.filter(i=>i.code!=='—');
   const total = r.items.reduce((a,i)=>a+i.price*i.qty,0);
-  el.innerHTML = `<div class="row between"><h4>${esc(r.title)}</h4><span class="small">Разом: <span class="sum">${fmt(total)} грн</span></span></div>
+  el.innerHTML = `<div class="row between"><h4>${esc(r.title)}</h4><span class="small">Разом: <span class="sum">${fmt(total)} грн</span> · ціни на 05.07.2026</span></div>
     <div class="row tabs"></div>
     <div class="tbox"><table><thead><tr><th>№</th><th>Код</th><th>Артикул</th><th>Найменування</th><th>К-сть</th><th>Од.</th><th style="text-align:right">Ціна</th><th style="text-align:right">Сума</th><th></th></tr></thead><tbody></tbody></table></div>
     <div class="row"><button class="btn" data-c="t2">Код + к-сть (1С)</button><button data-c="t1">Назва + к-сть</button><button data-c="t3">Вся таблиця</button><button data-x>Excel</button><span class="small">Розділ: <span class="sum">${fmt(rows.reduce((a,i)=>a+i.price*i.qty,0))} грн</span></span></div>`;
