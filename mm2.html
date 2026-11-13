@@ -785,8 +785,19 @@ async function loadMatrices(){
     try{ all.push(...mxParse(await get(id, t), id === MX_SRC[1][0] ? `Змішувачі: ${t}` : t.trim(), byCode, byArt)); }catch{ failed++; } });
   jobs.push(async () => { try{ S.mxBrands = mxBrandsText(await get(MX_BRANDS_ID)); }catch{ failed++; } });
   await pool(jobs, 6);
+  // Код є не в усіх рядках матриці → дозв'язуємо: модельний код з назви (швидко), потім назва (у фоні, суворо)
+  const nz = s => String(s||'').toLowerCase().replace(/[\s\-_.\/]/g,''), byN = new Map(); for(const x of S.cat) if(x[1]) byN.set(nz(x[1]), x);
+  for(const m of all){ if(m.it) continue;
+    for(const a of (m.name.match(/\b[A-Z0-9][A-Z0-9\-.\/]{3,}\b/g)||[]).reverse()){ const r = byN.get(nz(a)) || search(a,1)[0]; if(r && nz(r[1]+r[2]).includes(nz(a))){ m.it = r; break; } } }
   S.mx = all; S.mxBy = new Map(all.filter(m => m.it).map(m => [m.it[0], m]));
   S.mxStat = { rows: all.length, inPrice: S.mxBy.size, failed };
+  const rest = all.filter(m => !m.it); let k = 0;
+  const step = () => { const end = Math.min(k + 150, rest.length);
+    for(; k < end; k++){ const m = rest[k], r = search(m.name, 1)[0]; if(!r) continue;
+      const a = [...toks(m.name)].filter(t => t.length > 2), b = toks(`${r[1]} ${r[2]}`), nums = a.filter(t => /\d/.test(t));
+      if(a.filter(t => b.has(t)).length / (a.length||1) >= 0.85 && nums.every(t => b.has(t)) && !S.mxBy.has(r[0])){ m.it = r; S.mxBy.set(r[0], m); } }
+    S.mxStat.inPrice = S.mxBy.size; if(k < rest.length) setTimeout(step, 30); };
+  setTimeout(step, 500);
   return S.mxStat;
 }
 // Пошук у матриці: тип (вкладка) + слова + колір/форма/ширина → пріоритет A→D, потім збіг
@@ -817,7 +828,7 @@ const CAB_MIXER_WITH_END = ['KPCNR-SV21','KPCNR-AV21'], CAB_MIXER_UNKNOWN = 290,
 const cabIsCab = s => /колекторн\S* шаф|шаф\S* колекторн/i.test(s||'');
 const cabArt = (art, name, dict) => { const a = String(art||'').toUpperCase().trim(); if(dict[a] != null) return a;
   return Object.keys(dict).find(k => new RegExp(`(^|[^A-Z0-9-])${k.replace(/[-]/g,'\\-')}($|[^A-Z0-9-])`).test(String(name||'').toUpperCase())) || null; };
-const cabCirc = name => { const m = String(name||'').toLowerCase().match(/(\d{1,2})\s*-?\s*(?:х|и|ти|ми)?\s*(?:контур|вих|відвод|отв)|на\s*(\d{1,2})\s*(?:контур|вих|відвод|отв)/); const n = m ? +(m[1]||m[2]) : 0; return n >= 2 && n <= 12 ? n : 0; };
+const cabCirc = name => { const m = String(name||'').toLowerCase().match(/(\d{1,2})\s*-?\s*(?:х|и|ти|ми)?\s*(?:конту?р|вих|відвод|отв)|на\s*(\d{1,2})\s*(?:конту?р|вих|відвод|отв)/); const n = m ? +(m[1]||m[2]) : 0; return n >= 2 && n <= 12 ? n : 0; };
 function cabManW(art, name){ const n = cabCirc(name); if(!n) return null;
   const a = String(art||'').toUpperCase(); const pre = Object.keys(CAB_MAN).find(p => a.startsWith(p) || new RegExp(`\\b${p}`).test(String(name).toUpperCase()));
   const [w0, st] = CAB_MAN[pre || 'RC03']; return { w: w0 + (n-2)*st, exact: !!pre, n }; }
