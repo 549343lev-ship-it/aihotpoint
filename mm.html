@@ -567,15 +567,17 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 const MM = { minimax:{ url:'https://api.minimax.io/anthropic/v1/messages', model:'MiniMax-M3.1-Flash' },
              openrouter:{ url:'https://openrouter.ai/api/v1/chat/completions', model:'minimax/minimax-m3.1-flash' } };
-const provider = () => /^sk-or-/.test(apiKey()||'') ? 'openrouter' : 'minimax';
+// Проксі Google Apps Script: ключ MiniMax лежить на проксі, а в браузері — лише код доступу (PIN).
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbxUcsHI9dwTH3pIKess3OKjIlpSBeBZxOcV-oZKR-yRBJSfxY_dpDe57JAiqNAwzo4p/exec';
+const provider = () => /^sk-or-/.test(apiKey()||'') ? 'openrouter' : 'proxy';
 const USAGE = { in:0, out:0 };
 // Поле для ключа MiniMax прямо на сторінці (щоб не вставляти в посилання)
 function mmKeyBox(){
   const bar = document.getElementById('mmCost'); if(!bar) return;
-  if(apiKey()){ bar.innerHTML = 'Тест: MiniMax M3.1 Flash · ключ збережено <a href="#" id="mmReset" style="color:#664d03">змінити</a>';
+  if(apiKey()){ bar.innerHTML = 'Тест: MiniMax M3.1 Flash · код збережено <a href="#" id="mmReset" style="color:#664d03">змінити</a>';
     document.getElementById('mmReset').onclick = e => { e.preventDefault(); try{localStorage.removeItem('hpkey_mm')}catch{} mmKeyBox(); }; return; }
   bar.style.pointerEvents='auto'; bar.style.whiteSpace='normal';
-  bar.innerHTML = 'Тест MiniMax M3.1 Flash: вставте API-ключ <input id="mmKey" type="password" placeholder="ключ з platform.minimax.io" style="font:inherit;padding:2px 6px;border:1px solid #ffe69c;border-radius:6px;width:220px;max-width:50vw"> <button id="mmSave" style="font:inherit;padding:2px 10px;border-radius:6px;border:0;background:#c2410c;color:#fff;cursor:pointer">Зберегти</button>';
+  bar.innerHTML = 'Тест MiniMax M3.1 Flash: введіть код доступу <input id="mmKey" type="password" placeholder="код доступу (PIN)" style="font:inherit;padding:2px 6px;border:1px solid #ffe69c;border-radius:6px;width:220px;max-width:50vw"> <button id="mmSave" style="font:inherit;padding:2px 10px;border-radius:6px;border:0;background:#c2410c;color:#fff;cursor:pointer">Зберегти</button>';
   document.getElementById('mmSave').onclick = () => { const v = document.getElementById('mmKey').value.trim(); if(!v) return; ls.set('hpkey_mm', v); mmKeyBox(); hideErr(); };
 }
 document.addEventListener('DOMContentLoaded', mmKeyBox); setTimeout(mmKeyBox, 0);
@@ -704,6 +706,16 @@ async function post(url, headers, body){
 async function claude(messages, extra = {}){
   const tools = (extra.tools||[]).filter(t => !t.type);   // web_search працює лише в Claude — прибираємо
   const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools;
+  if(provider() === 'proxy'){
+    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({pin:apiKey(), body:{ model:MM.minimax.model, max_tokens:16000, messages, ...ex }})}); }
+    catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
+    const w = await res.json().catch(() => ({})); const d = w.data || {};
+    if(w.status === 401) throw new Error('Невірний код доступу. Натисніть «змінити» внизу і введіть правильний.');
+    if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
+    if(!w.status || w.status >= 400 || d.type === 'error') throw new Error(d?.error?.message || d?.base_resp?.status_msg || 'Відповідь задовга або перервалась (ліміт проксі 60 с). Спробуйте менший список.');
+    countUsage(d.usage?.input_tokens, d.usage?.output_tokens);
+    return d;
+  }
   if(provider() === 'minimax'){
     const d = await post(MM.minimax.url, { 'content-type':'application/json', 'x-api-key':apiKey(), 'authorization':'Bearer '+apiKey(), 'anthropic-version':'2023-06-01' },
       { model:MM.minimax.model, max_tokens:16000, messages, ...ex });
@@ -767,7 +779,7 @@ async function send(){
   if(S.busy) return; hideErr();
   const text = $('txt').value.trim(), file = S.file;
   if(!text && !file) return;
-  if(!apiKey()) return showErr('Вставте ключ MiniMax у жовте поле внизу сторінки і натисніть «Зберегти».');
+  if(!apiKey()) return showErr('Введіть код доступу в жовте поле внизу сторінки і натисніть «Зберегти».');
   if(S.mode!=='pick' && !S.cat.length){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
   $('txt').value=''; grow(); S.file=null; renderAtt();
   $('hero').hidden=true; $('cards').hidden=true;
@@ -1023,7 +1035,7 @@ $('capsBtn').onclick = () => {
   document.body.classList.add('introMode'); setMode(S.mode);
   const old = (ls.get('chat')||[]).filter(m=>!m.typing); if(old.length){ S.chat = old; save(); S.chat = []; S.cid = null; try{ localStorage.removeItem('chat'); }catch{} }
   loadRates(); S.catPromise = loadCatalog();
-  if(!apiKey()) showErr('Вставте ключ MiniMax у жовте поле внизу сторінки і натисніть «Зберегти».');
+  if(!apiKey()) showErr('Введіть код доступу в жовте поле внизу сторінки і натисніть «Зберегти».');
 })();
 
 </script>
