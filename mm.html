@@ -490,6 +490,7 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
 .opt .c{font-family:var(--mono);color:var(--brand-ink);font-size:12px}
 .cbadge{background:var(--brand);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:2px}
 body.roleClient #mmCost{display:none}
+body:has(.sheet:not([hidden])) #mmCost{display:none}
 </style>
 </head>
 <body>
@@ -599,7 +600,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-13.4';
+const APP_VER = '2026-11-13.5';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -625,7 +626,7 @@ async function proxyCall(payload){
   const res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify(payload)});
   return res.json();
 }
-function mmBar(){ const bar = document.getElementById('mmCost'); const u = ls.get('hpuser'); if(bar && u) bar.textContent = `Тест MiniMax M3.1 Flash · ${u.name}`; }
+function mmBar(){ const bar = document.getElementById('mmCost'); const u = ls.get('hpuser'); if(bar && u && !S.me) bar.textContent = `Тест MiniMax M3.1 Flash · ${u.name}`; }
 function mmGate(mode){
   let g = document.getElementById('mmGate');
   if(!g){ g = document.createElement('div'); g.id='mmGate'; document.body.appendChild(g); }
@@ -683,7 +684,7 @@ const apiKey = () => (ls.get('hpuser')||{}).token;
 // ── Пошук по прайсу: токени з розмірами (20х2.8, 1/2, dn15), основи слів, вага рідкісних слів (IDF) ──
 const SYN = { 'фитин':'фітин','тройн':'трійн','уголь':'кутни','угол':'кутни','колін':'кутни','отвод':'кутни','муфта':'муфта','перех':'перех','кран':'кран','шаров':'кульо','кульо':'кульо','гильз':'гільз','натяж':'натяж','надвиж':'натяж','пресс':'прес','прес':'прес','резьб':'різьб','наруж':'зовн','внутр':'внутр','латун':'латун','никел':'нікел','нікел':'нікел','хромо':'хром','счетч':'лічил','водом':'лічил','фильт':'фільт','клапа':'клапа','обрат':'зворо','редук':'редук','заглу':'заглу','удлин':'подов','подов':'подов','прокл':'прокл','утепл':'утепл','гофро':'гофро','крепл':'кріпл','крюк':'крюк','хомут':'хомут' };
 function toks(str){
-  let s = String(str||'').toLowerCase().replace(/ё/g,'е').replace(/[øⵁ⌀]/g,' ф ')
+  let s = String(str||'').toLowerCase().replace(/ё/g,'е').replace(/[øⵁ⌀]/g,' ф ').replace(/термоголов/g,'термост голов').replace(/[іи]нсерт/g,'вставка вентильна')
     .replace(/(\d),(\d)/g,'$1.$2')
     .replace(/(\d)\s*(?:''|"|″|”|“|дюйм)/g,'$1 ')
     .replace(/(\d)\s*[x×*хХ]\s*(?=\d)/g,'$1×')
@@ -1587,7 +1588,7 @@ async function hpMe(){
 async function hpUsage(){
   const bar = $('mmCost'); if(!bar) return;
   if(isClient()){ bar.hidden = true; return; }
-  try{ const u = await API('usage'), g = x => `${x.calls} запит. · $${x.usd.toFixed(3)} (${(x.usd*S.usd).toFixed(0)} грн)`;
+  try{ const u = await API('usage'), g = x => `${x.calls} запит. · $${x.usd.toFixed(3)} (${(x.usd*S.usd).toFixed(2)} грн)`;
     bar.textContent = `MiniMax · Ви сьогодні: ${g(u.today)} · місяць: ${g(u.month)}` + (u.allToday ? ` · усі сьогодні: ${g(u.allToday)}` : '');
     bar.title = `Сесія: ${Math.round(USAGE.in/1000)}k вх / ${Math.round(USAGE.out/1000)}k вих токенів (з міркуваннями)`;
   }catch{}
