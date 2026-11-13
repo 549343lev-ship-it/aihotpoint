@@ -567,20 +567,55 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 const MM = { minimax:{ url:'https://api.minimax.io/anthropic/v1/messages', model:'MiniMax-M3.1-Flash' },
              openrouter:{ url:'https://openrouter.ai/api/v1/chat/completions', model:'minimax/minimax-m3.1-flash' } };
-// Проксі Google Apps Script: ключ MiniMax лежить на проксі, а в браузері — лише код доступу (PIN).
+// Проксі Google Apps Script: ключ MiniMax лежить на проксі; користувач реєструється і отримує токен.
 const PROXY_URL = 'https://script.google.com/macros/s/AKfycbxUcsHI9dwTH3pIKess3OKjIlpSBeBZxOcV-oZKR-yRBJSfxY_dpDe57JAiqNAwzo4p/exec';
-const provider = () => /^sk-or-/.test(apiKey()||'') ? 'openrouter' : 'proxy';
+const provider = () => 'proxy';
 const USAGE = { in:0, out:0 };
-// Поле для ключа MiniMax прямо на сторінці (щоб не вставляти в посилання)
-function mmKeyBox(){
-  const bar = document.getElementById('mmCost'); if(!bar) return;
-  if(apiKey()){ bar.innerHTML = 'Тест: MiniMax M3.1 Flash · код збережено <a href="#" id="mmReset" style="color:#664d03">змінити</a>';
-    document.getElementById('mmReset').onclick = e => { e.preventDefault(); try{localStorage.removeItem('hpkey_mm')}catch{} mmKeyBox(); }; return; }
-  bar.style.pointerEvents='auto'; bar.style.whiteSpace='normal';
-  bar.innerHTML = 'Тест MiniMax M3.1 Flash: введіть код доступу <input id="mmKey" type="password" placeholder="код доступу (PIN)" style="font:inherit;padding:2px 6px;border:1px solid #ffe69c;border-radius:6px;width:220px;max-width:50vw"> <button id="mmSave" style="font:inherit;padding:2px 10px;border-radius:6px;border:0;background:#c2410c;color:#fff;cursor:pointer">Зберегти</button>';
-  document.getElementById('mmSave').onclick = () => { const v = document.getElementById('mmKey').value.trim(); if(!v) return; ls.set('hpkey_mm', v); mmKeyBox(); hideErr(); };
+// ── Реєстрація при першому вході. Користувачі — у Google Таблиці «Hotpoint.ai — користувачі» ──
+async function proxyCall(payload){
+  const res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify(payload)});
+  return res.json();
 }
-document.addEventListener('DOMContentLoaded', mmKeyBox); setTimeout(mmKeyBox, 0);
+function mmBar(){ const bar = document.getElementById('mmCost'); const u = ls.get('hpuser'); if(bar && u) bar.textContent = `Тест MiniMax M3.1 Flash · ${u.name}`; }
+function mmGate(mode){
+  let g = document.getElementById('mmGate');
+  if(!g){ g = document.createElement('div'); g.id='mmGate'; document.body.appendChild(g); }
+  g.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(20,20,20,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:"Open Sans",sans-serif';
+  const box = 'background:#fff;border-radius:16px;max-width:380px;width:100%;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.25)';
+  const inp = 'width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:10px 12px;border:1px solid #d0d0d0;border-radius:10px;margin-top:4px';
+  if(mode === 'closed'){
+    g.innerHTML = `<div style="${box}"><h2 style="margin:0 0 8px;font-size:20px">Доступ закрито</h2><p style="margin:0;color:#555">Ваш доступ до помічника «Гарячої Точки» закрито. Зверніться до адміністратора.</p></div>`;
+    return;
+  }
+  g.innerHTML = `<form id="mmReg" style="${box}">
+    <h2 style="margin:0 0 4px;font-size:20px">Реєстрація</h2>
+    <p style="margin:0 0 14px;color:#555;font-size:14px">Перед першим використанням помічника «Гарячої Точки» заповніть дані.</p>
+    <label style="display:block;font-size:13px;color:#444;margin-bottom:10px">ПІБ<input name="name" required autocomplete="name" style="${inp}"></label>
+    <label style="display:block;font-size:13px;color:#444;margin-bottom:10px">Пошта<input name="email" type="email" required autocomplete="email" style="${inp}"></label>
+    <label style="display:block;font-size:13px;color:#444;margin-bottom:14px">Телефон<input name="phone" type="tel" required autocomplete="tel" placeholder="+380…" style="${inp}"></label>
+    <div id="mmRegErr" style="color:#b42318;font-size:13px;min-height:18px;margin-bottom:6px"></div>
+    <button style="width:100%;font:inherit;font-weight:700;font-size:15px;padding:12px;border:0;border-radius:10px;background:#c2410c;color:#fff;cursor:pointer">Зареєструватися</button>
+  </form>`;
+  document.getElementById('mmReg').onsubmit = async e => {
+    e.preventDefault(); const f = e.target, btn = f.querySelector('button'), err = document.getElementById('mmRegErr');
+    btn.disabled = true; btn.textContent = 'Реєструю…'; err.textContent = '';
+    try{
+      const w = await proxyCall({action:'register', name:f.name.value, email:f.email.value, phone:f.phone.value});
+      if(w.status === 403) return mmGate('closed');
+      if(w.status !== 200 || !w.data?.token) throw new Error(w.data?.error?.message || 'Не вдалося зареєструватися');
+      ls.set('hpuser', {token:w.data.token, name:w.data.name}); g.remove(); mmBar(); hideErr();
+    }catch(ex){ err.textContent = ex.message || 'Немає з\'єднання. Спробуйте ще раз.'; btn.disabled = false; btn.textContent = 'Зареєструватися'; }
+  };
+}
+async function mmStart(){
+  if(!apiKey()) return mmGate('register');
+  mmBar();
+  try{ const w = await proxyCall({action:'check', token:apiKey()});
+    if(w.status === 403) mmGate('closed');
+    else if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); }
+  }catch{}
+}
+setTimeout(mmStart, 0);
 const CATS = [['rough_plumbing','Чорнова'],['finish_plumbing','Чистова'],['rough_electrical','Електрика']];
 const STARTERS = { calc:'Я хочу порахувати товар. Ось мій список: ', project:'Я хочу зробити проєкт інженерних мереж за дизайн-проєктом. Квартира ', pick:'Я хочу підібрати ' };
 // Прайси «Гарячої Точки» у Google Таблицях (папка ПРАЙСИ). Доступ: «усі, хто має посилання — читач».
@@ -591,8 +626,8 @@ const S = { cid:null, mode:'calc', file:null, cat:[], usd:45.5, eur:51, chat:[],
 const ls = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 // ── Ключ: приходить у посиланні …#key=… і запам'ятовується в браузері ──
-(function(){ const m = location.hash.match(/key=([^&]+)/); if(m){ ls.set('hpkey_mm', decodeURIComponent(m[1])); history.replaceState(null,'',location.pathname); } })();
-const apiKey = () => ls.get('hpkey_mm');
+if(/key=/.test(location.hash)) history.replaceState(null,'',location.pathname);   // старі посилання з ключем більше не потрібні
+const apiKey = () => (ls.get('hpuser')||{}).token;
 
 // ── Прайс з Google Таблиць: [code, art, name, unit, price, usd(0/1), group] ──
 const norm = s => s.toLowerCase().replace(/ø/g,'ф').replace(/[×*]/g,'х').replace(/(\d)x(\d)/g,'$1х$2').replace(/[,"'«»()]/g,' ');
@@ -707,10 +742,11 @@ async function claude(messages, extra = {}){
   const tools = (extra.tools||[]).filter(t => !t.type);   // web_search працює лише в Claude — прибираємо
   const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools;
   if(provider() === 'proxy'){
-    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({pin:apiKey(), body:{ model:MM.minimax.model, max_tokens:16000, messages, ...ex }})}); }
+    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), body:{ model:MM.minimax.model, max_tokens:16000, messages, ...ex }})}); }
     catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
     const w = await res.json().catch(() => ({})); const d = w.data || {};
-    if(w.status === 401) throw new Error('Невірний код доступу. Натисніть «змінити» внизу і введіть правильний.');
+    if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
+    if(w.status === 403){ mmGate('closed'); throw new Error('Доступ закрито. Зверніться до адміністратора.'); }
     if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
     if(!w.status || w.status >= 400 || d.type === 'error') throw new Error(d?.error?.message || d?.base_resp?.status_msg || 'Відповідь задовга або перервалась (ліміт проксі 60 с). Спробуйте менший список.');
     countUsage(d.usage?.input_tokens, d.usage?.output_tokens);
@@ -779,7 +815,7 @@ async function send(){
   if(S.busy) return; hideErr();
   const text = $('txt').value.trim(), file = S.file;
   if(!text && !file) return;
-  if(!apiKey()) return showErr('Введіть код доступу в жовте поле внизу сторінки і натисніть «Зберегти».');
+  if(!apiKey()) return showErr('Спершу зареєструйтесь (оновіть сторінку).');
   if(S.mode!=='pick' && !S.cat.length){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
   $('txt').value=''; grow(); S.file=null; renderAtt();
   $('hero').hidden=true; $('cards').hidden=true;
@@ -1035,7 +1071,7 @@ $('capsBtn').onclick = () => {
   document.body.classList.add('introMode'); setMode(S.mode);
   const old = (ls.get('chat')||[]).filter(m=>!m.typing); if(old.length){ S.chat = old; save(); S.chat = []; S.cid = null; try{ localStorage.removeItem('chat'); }catch{} }
   loadRates(); S.catPromise = loadCatalog();
-  if(!apiKey()) showErr('Введіть код доступу в жовте поле внизу сторінки і натисніть «Зберегти».');
+  if(!apiKey()) showErr('Спершу зареєструйтесь (оновіть сторінку).');
 })();
 
 </script>
