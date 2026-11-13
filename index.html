@@ -656,7 +656,7 @@ const sizesOf = str => [...toks(str)].filter(k => /^#.*[×\/]/.test(k));     // 
 let HAY = [], IDX = new Map();
 const num = v => { const n = parseFloat(String(v).replace(/[\s ]/g,'').replace(',','.')); return isFinite(n) ? n : NaN; };
 function parseRows(rows, group){
-  const out = [];
+  const out = []; let sub = '';
   for(const r of rows){
     const cells = r.map(v => String(v ?? '').trim());
     const ci = cells.findIndex(v => /^\d{3,11}$/.test(v.replace(/\s/g,''))); if(ci < 0) continue;
@@ -666,8 +666,8 @@ function parseRows(rows, group){
     if(pi < 0) continue;
     let name = cells[ni], unit = 'шт'; const m = name.match(/^(.*),\s*([^,]*)$/); if(m){ name = m[1].trim(); unit = m[2].trim(); }
     const art = cells.slice(ci+1, ni).find(v => v) || '';
-    if(!unit && !art) continue; // рядок-група
-    out.push([cells[ci].replace(/\s/g,'').padStart(11,'0'), art, name, unit || 'шт', num(cells[pi]), cells.includes('USD') ? 1 : cells.includes('EUR') ? 2 : 0, group]);
+    if(!unit && !art){ sub = name; continue; } // рядок-група (запам'ятовуємо: бренд шаф Standart/ASG тощо)
+    out.push([cells[ci].replace(/\s/g,'').padStart(11,'0'), art, name, unit || 'шт', num(cells[pi]), cells.includes('USD') ? 1 : cells.includes('EUR') ? 2 : 0, group, sub]);
   }
   return out;
 }
@@ -689,8 +689,10 @@ async function loadCatalog(){
   S.cat = [...map.values()]; buildIndex();
   if(!S.cat.length){ status.classList.remove('loading'); status.textContent = 'Не вдалося відкрити прайс. Перевірте, що папка ПРАЙСИ в Google Drive відкрита на перегляд «усім, хто має посилання».'; status.className = 'err'; return; }
   status.classList.remove('loading');
-  status.textContent = `Прайс: ${S.cat.length.toLocaleString('uk-UA')} товарів${failed?` (не відкрилось файлів: ${failed})`:''}`;
-  setTimeout(() => { if(!failed) status.hidden = true; }, 2500);
+  status.textContent = `Прайс: ${names.length-failed} з ${names.length} файлів, ${S.cat.length.toLocaleString('uk-UA')} товарів${failed?` — НЕ відкрилось: ${failed}`:''} · матриці…`;
+  const mx = await loadMatrices().catch(() => null);
+  status.textContent = status.textContent.replace(' · матриці…', mx ? ` · матриці: ${mx.rows.toLocaleString('uk-UA')} позицій (у прайсі ${mx.inPrice})${mx.failed?`, не відкрилось вкладок: ${mx.failed}`:''}` : ' · матриці не відкрились');
+  setTimeout(() => { if(!failed && !mx?.failed) status.hidden = true; }, 3500);
 }
 const uah = it => it[5]===1 ? it[4]*S.usd : it[5]===2 ? it[4]*S.eur : it[4];
 async function loadRates(){ try{ const r = await (await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json')).json(); for(const x of r){ if(x.cc==='USD') S.usd = x.rate; if(x.cc==='EUR') S.eur = x.rate; } }catch{} }
@@ -718,6 +720,177 @@ function search(q, limit, brands = []){
   return [...best].sort((a,b) => b[1]-a[1]).slice(0, limit).map(x => S.cat[x[0]]);
 }
 
+// ── Матриці підбору (Google Диск «Асортиментні матриці», ті самі, що в проєкті «ПІДБІР ТОВАРУ») ──
+// Кожна вкладка вантажиться окремо (&sheet=…): без цього gviz віддає лише першу вкладку.
+const MX_SRC = [
+  ['1W1uTojIczBrKgtH4zy0SWbr6P1EBEat5ZPkfXPY3aeU', ['Підвісні унітази','Підлогові унітази','Умивальники та раковини','Тумби','Пенали, комоди, навісні шафи','Дзеркальні шафи','Мийки штучний камінь','Мийки з нержавійки','Для людей з обмеж можливостями ']],
+  ['1AwpcgMmIeF_Ez1rzGp-7YnseM63mAsr1wwll5uHKOsA', ['Кухня','Умивальник','Ванна','Душ']],
+];
+const MX_BRANDS_ID = '1IxGAB6NWYMth8Bpmi3qw79d-wje9Lq6MHJ5fYI7uyEk';
+const MX_TABS = ['Підвісні унітази','Підлогові унітази','Умивальники та раковини','Тумби','Пенали, комоди, навісні шафи','Дзеркальні шафи','Мийки штучний камінь','Мийки з нержавійки','Для людей з обмеж можливостями','Змішувачі: Кухня','Змішувачі: Умивальник','Змішувачі: Ванна','Змішувачі: Душ'];
+// тип потреби → вкладка матриці (порядок важливий: змішувач для мийки — це змішувач, не мийка)
+const MX_KIND = [
+  [/(змішувач|смеситель).*(кух|мийк)|кухонн\S* (змішувач|смеситель)/i, 'Змішувачі: Кухня'],
+  [/(змішувач|смеситель).*(умив|раковин)/i, 'Змішувачі: Умивальник'],
+  [/(змішувач|смеситель).*ванн/i, 'Змішувачі: Ванна'],
+  [/душ|лійк|лейк|(змішувач|смеситель).*душ/i, 'Змішувачі: Душ'],
+  [/(унітаз|біде).*(підвісн|подвесн)|(підвісн|подвесн)\S* (унітаз|біде)/i, 'Підвісні унітази'],
+  [/унітаз|компакт|біде/i, 'Підлогові унітази'],
+  [/тумб/i, 'Тумби'], [/пенал|комод|навісн\S* шаф/i, 'Пенали, комоди, навісні шафи'], [/дзеркальн\S* шаф|шаф\S*.дзеркал/i, 'Дзеркальні шафи'],
+  [/мийк\S*.*(нерж|сталь)|(нерж|сталь)\S*.*мийк/i, 'Мийки з нержавійки'], [/мийк/i, 'Мийки штучний камінь'],
+  [/умивальн|раковин/i, 'Умивальники та раковини'], [/обмежен|інвалід|поручн/i, 'Для людей з обмеж можливостями'],
+];
+const mxKind = s => (MX_KIND.find(([re]) => re.test(s||''))||[])[1] || null;
+const MX_COLS = { name:/^(найменування|номенклатура)/, art:/артикул/, code:/^(код|1с)/, brand:/^бренд/, color:/^колір/, shape:/^форма/, mount:/монтаж/,
+  w:/^ширина/, d:/^(глибина|довжина)/, h:/^висота/, seg:/(цінов|сегмент)/, prio:/пріоритет/, link:/(посилання|b2b|сайт)/, mat:/^матеріал/ };
+const MX_SKIP = /зображ|креслен|фото|схема|умова|країна/i;
+const mxPrio = v => { const s = String(v||'').trim().toUpperCase().replace('А','A').replace('В','B').replace('С','C'); return /^[ABCD]$/.test(s) ? s : ''; };
+const mxRank = p => p ? 'ABCD'.indexOf(p) : 4;
+function mxParse(rows, tab, byCode, byArt){
+  const hi = rows.findIndex(r => r.some(v => /^бренд/i.test(String(v).trim()))); if(hi < 0) return [];
+  const H = rows[hi].map(v => String(v).trim()), col = {};
+  for(const [k, re] of Object.entries(MX_COLS)) col[k] = H.findIndex(h => re.test(h.toLowerCase()));
+  if(col.name < 0) col.name = 0;
+  const out = [];
+  for(const r of rows.slice(hi+1)){
+    const g = k => col[k] >= 0 ? String(r[col[k]] ?? '').trim() : '';
+    const name = g('name'); if(!name || name.length < 4) continue;
+    const code = g('code').replace(/\D/g,''), art = g('art');
+    const it = (code && byCode.get(code.padStart(11,'0'))) || (art && byArt.get(art.toLowerCase().replace(/\s/g,''))) || null;
+    const extra = H.map((h,i) => h && !MX_SKIP.test(h) && !Object.values(col).includes(i) && String(r[i]??'').trim() ? `${h.replace(/\s*\(.*$/,'')}: ${String(r[i]).trim()}` : '').filter(Boolean).join('; ');
+    out.push({ tab, it, name, brand:g('brand'), color:g('color'), shape:g('shape'), mount:g('mount'), mat:g('mat'), w:num(g('w')), d:num(g('d')), h:num(g('h')),
+      seg:g('seg'), prio:mxPrio(g('prio')), link:(g('link').match(/https?:\/\/\S+/)||[''])[0], extra: extra.slice(0,220) });
+  }
+  return out;
+}
+function mxBrandsText(rows){   // МАТРИЦЯ_бренди: блоки «Сегмент / КАТЕГОРІЯ бренди / типи так-ні»
+  const out = []; let seg = null, cat = null, brands = [], have = [];
+  const flush = () => { if(cat) out.push(`${cat}: ` + brands.map((b,j) => b && `${b}${seg?.[j]?` (${seg[j]})`:''}${have[j]?.length?` — ${have[j].join(', ')}`:''}`).filter(Boolean).join('; ')); cat = null; };
+  for(const r0 of rows){ const r = r0.map(v => String(v ?? '').trim()), k = r[0];
+    if(/^сегмент/i.test(k)){ flush(); seg = r.slice(1); continue; }
+    if(seg && !cat && k && k === k.toUpperCase() && /[А-ЯІЇЄ]/.test(k)){ cat = k; brands = r.slice(1); have = brands.map(() => []); continue; }
+    if(/^посилання/i.test(k)){ flush(); seg = null; continue; }
+    if(cat && k) r.slice(1).forEach((v,j) => { if(/^так/i.test(v)) have[j]?.push(k); });
+  }
+  flush(); return out.join('\n');
+}
+async function loadMatrices(){
+  const byCode = new Map(S.cat.map(x => [x[0], x])), byArt = new Map();
+  for(const x of S.cat) if(x[1]) byArt.set(String(x[1]).toLowerCase().replace(/\s/g,''), x);
+  const get = async (id, sheet) => { const res = await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv${sheet?`&sheet=${encodeURIComponent(sheet)}`:''}`);
+    const csv = await res.text(); if(!res.ok || csv.trim().startsWith('<')) throw new Error('доступ');
+    const wb = XLSX.read(csv, {type:'string', raw:true}); return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:''}); };
+  const jobs = [], all = []; let failed = 0;
+  for(const [id, tabs] of MX_SRC) for(const t of tabs) jobs.push(async () => {
+    try{ all.push(...mxParse(await get(id, t), id === MX_SRC[1][0] ? `Змішувачі: ${t}` : t.trim(), byCode, byArt)); }catch{ failed++; } });
+  jobs.push(async () => { try{ S.mxBrands = mxBrandsText(await get(MX_BRANDS_ID)); }catch{ failed++; } });
+  await pool(jobs, 6);
+  // Код є не в усіх рядках матриці → дозв'язуємо: модельний код з назви (швидко), потім назва (у фоні, суворо)
+  const nz = s => String(s||'').toLowerCase().replace(/[\s\-_.\/]/g,''), byN = new Map(); for(const x of S.cat) if(x[1]) byN.set(nz(x[1]), x);
+  for(const m of all){ if(m.it) continue;
+    for(const a of (m.name.match(/\b[A-Z0-9][A-Z0-9\-.\/]{3,}\b/g)||[]).reverse()){ const r = byN.get(nz(a)) || search(a,1)[0]; if(r && nz(r[1]+r[2]).includes(nz(a))){ m.it = r; break; } } }
+  S.mx = all; S.mxBy = new Map(all.filter(m => m.it).map(m => [m.it[0], m]));
+  S.mxStat = { rows: all.length, inPrice: S.mxBy.size, failed };
+  const rest = all.filter(m => !m.it); let k = 0;
+  const step = () => { const end = Math.min(k + 150, rest.length);
+    for(; k < end; k++){ const m = rest[k], r = search(m.name, 1)[0]; if(!r) continue;
+      const a = [...toks(m.name)].filter(t => t.length > 2), b = toks(`${r[1]} ${r[2]}`), nums = a.filter(t => /\d/.test(t));
+      if(a.filter(t => b.has(t)).length / (a.length||1) >= 0.85 && nums.every(t => b.has(t)) && !S.mxBy.has(r[0])){ m.it = r; S.mxBy.set(r[0], m); } }
+    S.mxStat.inPrice = S.mxBy.size; if(k < rest.length) setTimeout(step, 30); };
+  setTimeout(step, 500);
+  return S.mxStat;
+}
+// Пошук у матриці: тип (вкладка) + слова + колір/форма/ширина → пріоритет A→D, потім збіг
+function mxFind({type, query, color, shape, max_width, min_width, in_price}, limit = 12){
+  const kind = MX_TABS.find(t => t === type) || mxKind(type || query || ''); const q = [...toks(query||'')];
+  const lc = s => String(s||'').toLowerCase();
+  let rows = (S.mx||[]).filter(m => (!kind || m.tab === kind) && (!in_price || m.it));
+  if(max_width) rows = rows.filter(m => !isFinite(m.w) || m.w <= +max_width);
+  if(min_width) rows = rows.filter(m => !isFinite(m.w) || m.w >= +min_width);
+  const sc = m => { const t = toks(`${m.name} ${m.brand} ${m.color} ${m.shape} ${m.mount} ${m.mat} ${m.extra} ${m.it?m.it[2]:''}`);
+    let x = q.filter(k => t.has(k)).length; if(color && lc(m.color+' '+m.name).includes(lc(color).slice(0,5))) x += 3; if(shape && lc(m.shape+' '+m.name).includes(lc(shape).slice(0,5))) x += 2; if(m.it) x += 1; return x; };
+  return rows.map(m => [m, sc(m)]).filter(([,x]) => !q.length || x > 0)
+    .sort((a,b) => mxRank(a[0].prio) - mxRank(b[0].prio) || b[1] - a[1]).slice(0, limit).map(x => x[0]);
+}
+const mxLine = m => [m.it ? m.it[0] : 'немає в прайсі', m.name, m.brand, `пріоритет ${m.prio||'—'}`, m.color, m.shape, m.mount,
+  [m.w,m.d,m.h].every(v => !isFinite(v)) ? '' : `${isFinite(m.w)?m.w:'?'}×${isFinite(m.d)?m.d:'?'}×${isFinite(m.h)?m.h:'?'} мм`, m.seg, m.it ? `${fmt(uah(m.it))} грн` : '', m.link, m.extra].filter(Boolean).join(' | ');
+const mxTag = c => { const m = S.mxBy?.get(c[0]); return m ? ` | МАТРИЦЯ ${m.prio||'—'}${m.color?', '+m.color:''}${m.shape?', '+m.shape:''}${isFinite(m.w)?', ш '+m.w:''}` : ''; };
+
+// ── Колекторна шафа ЗА ШИРИНОЮ (HP·CAB, правило директора 15.10.2026; таблиця RAFTEC / POLMARK) ──
+// Шафа ≥ (вузол | крани) + байпас + колектор + (кінцевий | крани) + 50 мм з КОЖНОГО боку. Бренд ASG → Standart, найвужча, що вміщує.
+const CAB_GAP = 50;
+const CAB_MAN = { LCR:[100,50], RC03:[120,50], PSMR:[130,50], PBMF:[104,48], PSMF:[130,50] };   // ширина на 2 контури, + крок за кожен наступний (2…12)
+const CAB_MIXER = { 'LSG-161H':196, 'SUR03':245, 'LSG-162H':150, 'PCNR03':116, 'KPCNR-SV21':290, 'KPCNR-AV21':290, 'PMIXS03':195 };
+const CAB_BYPASS = { 'BR03':60, 'PMBP0303':60 };
+const CAB_END = { 'KZK03':25, 'KKR03':77, 'KKR03-B':77, 'JKK03':77, 'PEPM03':35, 'PMKEL03':55, 'PMWL03':55 };
+const CAB_VALVES = { 'RKMSV03':90, 'RKMAV03':100 };
+const CAB_MIXER_WITH_END = ['KPCNR-SV21','KPCNR-AV21'], CAB_MIXER_UNKNOWN = 290, CAB_DEFAULT_END = 77, CAB_VALVES_GENERIC = 126;
+const cabIsCab = s => /колекторн\S* шаф|шаф\S* колекторн/i.test(s||'');
+const cabArt = (art, name, dict) => { const a = String(art||'').toUpperCase().trim(); if(dict[a] != null) return a;
+  return Object.keys(dict).find(k => new RegExp(`(^|[^A-Z0-9-])${k.replace(/[-]/g,'\\-')}($|[^A-Z0-9-])`).test(String(name||'').toUpperCase())) || null; };
+const cabCirc = name => { const m = String(name||'').toLowerCase().match(/(\d{1,2})\s*-?\s*(?:х|и|ти|ми)?\s*(?:конту?р|вих|відвод|отв)|на\s*(\d{1,2})\s*(?:конту?р|вих|відвод|отв)/); const n = m ? +(m[1]||m[2]) : 0; return n >= 2 && n <= 12 ? n : 0; };
+function cabManW(art, name){ const n = cabCirc(name); if(!n) return null;
+  const a = String(art||'').toUpperCase(); const pre = Object.keys(CAB_MAN).find(p => a.startsWith(p) || new RegExp(`\\b${p}`).test(String(name).toUpperCase()));
+  const [w0, st] = CAB_MAN[pre || 'RC03']; return { w: w0 + (n-2)*st, exact: !!pre, n }; }
+function cabParts(rows, text){
+  const P = { man:[], mix:[], byp:[], end:[], val:[] };
+  for(const r of rows){ const nm = String(r.name||''), low = nm.toLowerCase(); if(cabIsCab(nm) || r.code === '—') continue;
+    let k;
+    if(/^колектор[\s,]/i.test(nm) && !/кран|шаф|кріплен|кронштейн/i.test(low)){ const m = cabManW(r.art, nm); if(m) P.man.push({ w:m.w, exact:m.exact, label:`колектор ${m.n} конт.`, r }); }
+    else if((k = cabArt(r.art, nm, CAB_MIXER))) P.mix.push({ w:CAB_MIXER[k], exact:true, label:k, art:k, r });
+    else if(/змішувальн\S* вузол|насосн\S* груп|термозмішувальн/i.test(low)) P.mix.push({ w:CAB_MIXER_UNKNOWN, exact:false, label:'вузол', r });
+    else if((k = cabArt(r.art, nm, CAB_BYPASS))) P.byp.push({ w:CAB_BYPASS[k], exact:true, label:'байпас', r });
+    else if((k = cabArt(r.art, nm, CAB_END))) P.end.push({ w:CAB_END[k], exact:true, label:'кінцевий', r });
+    else if((k = cabArt(r.art, nm, CAB_VALVES))) P.val.push({ w:CAB_VALVES[k], exact:true, label:'крани', r });
+    else if(/кінцев\S* елемент/i.test(low)) P.end.push({ w:CAB_DEFAULT_END, exact:false, label:'кінцевий', r });
+    else if(/байпас/i.test(low)) P.byp.push({ w:60, exact:false, label:'байпас', r });
+  }
+  if(!P.val.length && /кран\S*[^|\n]{0,40}(колектор|гребін|шаф)|(колектор|гребін)[^|\n]{0,40}кран/i.test(text||'')) P.val.push({ w:CAB_VALVES_GENERIC, exact:false, label:'крани' });
+  return P;
+}
+function cabNeed(P){
+  const mx = a => a.length ? a.reduce((x,y) => y.w > x.w ? y : x) : null;
+  const m = mx(P.man); if(!m) return null;
+  const mix = mx(P.mix), byp = mx(P.byp), end = mx(P.end), val = mx(P.val);
+  const a = mix || val, b = (mix && CAB_MIXER_WITH_END.includes(mix.art)) ? null : (end || (mix ? val : null));
+  const parts = [a && [a===mix?(mix.art||'вузол'):'крани', a.w], byp && ['байпас', byp.w], [m.label, m.w], b && [b===end?'кінцевий':'крани', b.w]].filter(Boolean);
+  const row = parts.reduce((s,p) => s + p[1], 0), mm = row + 2*CAB_GAP;
+  const exact = m.exact && [a,b,byp].every(x => !x || x.exact);
+  return { mm, exact, lay: `${parts.map(p => `${p[0]} ${p[1]}`).join(' + ')} = ${row} + ${2*CAB_GAP} = ${mm} мм${exact?'':' (≈ частина ширин орієнтовна)'}` };
+}
+function cabList(){
+  if(cabList.n === S.cat.length) return cabList.v;
+  cabList.n = S.cat.length; cabList.v = S.cat.filter(x => cabIsCab(x[2])).map(x => { const nm = x[2], w = +((nm.match(/(\d{3,4})\s*[xх×*]/i)||[])[1]||0);
+    return { it:x, w, mount: /зовн|накладн/i.test(nm) ? 'зовн' : /вріз|вбуд|внутр/i.test(nm) ? 'вріз' : null,
+      brand: /\bASG\b/i.test(nm) ? 'ASG' : (/standart/i.test(x[7]||'') || /^колекторна шафа №/i.test(nm)) ? 'Standart' : null }; }).filter(c => c.w);
+  return cabList.v;
+}
+function cabPick(mm, mount = 'вріз'){
+  for(const b of ['ASG','Standart']){ const pool = cabList().filter(c => c.brand === b && c.mount === mount && c.w >= mm && !/п\/з|зразок/i.test(c.it[2]));
+    if(pool.length) return pool.sort((x,y) => x.w - y.w || uah(x.it) - uah(y.it))[0]; }
+  return null;
+}
+// Після підбору: шафу рахуємо кодом, а не моделлю. needs[i] ↔ items[i] (похідні рядки — в кінці).
+function cabFix(items, needs, project){
+  const text = needs.map(n => n.need||'').join('\n'), need = cabNeed(cabParts(items, text)); if(!need) return;
+  const idx = items.findIndex((it,i) => cabIsCab(it.name) || cabIsCab(needs[i]?.need) || (/шаф|ящик/i.test(needs[i]?.need||'') && /колектор|тп|т\/п|гребін/i.test(needs[i]?.need||'')));
+  const src = idx >= 0 ? `${needs[idx]?.need||''} ${items[idx].name}` : '';
+  const mount = /зовн|накладн/i.test(src) ? 'зовн' : 'вріз';
+  const best = cabPick(need.mm, mount), bestTxt = best ? `${best.it[0]} ${best.it[2]}` : `шафа ≥ ${need.mm} мм (нема в прайсі)`;
+  const asItem = (c, note) => ({ code:c.it[0], art:c.it[1], name:c.it[2], qty:1, unit:c.it[3], match:'exact', category:'rough_plumbing', price:Math.round(uah(c.it)*100)/100, note });
+  if(idx >= 0){
+    const named = /№\s*\d|\b\d{3,4}\s*(мм)?\b|\b\d{2,3}\s*см\b|sv-?\d/i.test(needs[idx]?.need||'');   // № або ширину назвав майстер — не міняємо
+    const cur = cabList().find(c => c.it[0] === items[idx].code);
+    if(named && cur){ if(cur.w < need.mm){ items[idx].match = 'analog'; items[idx].note = [items[idx].note, `≈ тісно: потрібно ≥ ${need.mm} мм (${need.lay}); краще ${bestTxt}`].filter(Boolean).join(' · '); }
+      else items[idx].note = [items[idx].note, `Шафа вміщує: ${need.lay}`].filter(Boolean).join(' · '); return; }
+    if(best){ const q = items[idx].qty || 1; items[idx] = { ...asItem(best, `Шафа за шириною: ${need.lay}`), qty:q }; }
+    else items[idx].note = [items[idx].note, `Потрібна шафа ≥ ${need.mm} мм: ${need.lay}`].filter(Boolean).join(' · ');
+    return;
+  }
+  if(project && best){ items.push(asItem(best, `Похідна: колекторна шафа за шириною — ${need.lay}`)); return; }
+  const man = items.find(it => /^колектор[\s,]/i.test(it.name)); if(man) man.note = [man.note, `Шафи в замовленні нема — під цей набір: ${bestTxt} (${need.lay}); зовн.: ${cabPick(need.mm,'зовн')?.it[2]||'—'}`].filter(Boolean).join(' · ');
+}
+
 // ── Режими і заготовки ──
 let setMode = function(m){ S.mode = m; document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on', b.dataset.m===m)); }
 document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.m));
@@ -738,6 +911,13 @@ document.body.ondrop = e => { e.preventDefault(); e.dataTransfer.files[0] && tak
 const b64 = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result.split(',')[1]); r.readAsDataURL(blob); });
 const toBlob = c => new Promise(ok=>c.toBlob(ok,'image/jpeg',0.85));
 async function shrink(file){ const img=await createImageBitmap(file); const k=Math.min(1,1800/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=img.width*k; c.height=img.height*k; c.getContext('2d').drawImage(img,0,0,c.width,c.height); return toBlob(c); }
+async function pdfText(file){   // рядки з текстового шару PDF (рахунки, специфікації); у скані — порожньо
+  const pdf = await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise; const out = [];
+  for(let p=1;p<=Math.min(pdf.numPages,40);p++){ const tc = await (await pdf.getPage(p)).getTextContent(); const rows = new Map();
+    for(const it of tc.items){ const y = Math.round(it.transform[5]/3); if(!rows.has(y)) rows.set(y, []); rows.get(y).push([it.transform[4], it.str]); }
+    for(const y of [...rows.keys()].sort((a,b)=>b-a)) out.push(rows.get(y).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).join(' ').replace(/\s+/g,' ').trim()); }
+  return out.filter(Boolean).join('\n');
+}
 async function pdfPages(file){
   const pdf = await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise; const out=[];
   for(let p=1;p<=Math.min(pdf.numPages,20);p++){ const pg=await pdf.getPage(p); const v0=pg.getViewport({scale:1}); const v=pg.getViewport({scale:Math.min(2,1600/Math.max(v0.width,v0.height))});
@@ -751,6 +931,7 @@ async function take(f){
     if(f.type.startsWith('image/')) file.images = [await b64(await shrink(f))];
     else if(f.type==='application/pdf' || /\.pdf$/i.test(f.name)){
       file.images = await Promise.all((await pdfPages(f)).map(b64));
+      try{ file.pdfText = await pdfText(f); }catch{}
     }
     else if(/\.(xlsx|xls)$/i.test(f.name)){ const wb = XLSX.read(await f.arrayBuffer()); file.text = wb.SheetNames.map(s=>`# ${s}\n`+XLSX.utils.sheet_to_csv(wb.Sheets[s])).join('\n'); }
     else file.text = await f.text();
@@ -802,7 +983,7 @@ async function claude(messages, extra = {}){
   }
   const viaProxy = provider() === 'proxy';
   // reasoning_effort 'low': M3.1 Flash за замовчуванням думає на 'max' і з'їдає весь ліміт токенів
-  const body = { model: viaProxy ? MM.minimax.model : MM.openrouter.model, max_tokens:Math.max(ex.max_tokens||16000, 16000), reasoning_effort:effort, messages:oai };
+  const body = { model: viaProxy ? MM.minimax.model : MM.openrouter.model, max_tokens:Math.max(ex.max_tokens||16000, 16000), reasoning_effort:effort, temperature: ex.temperature ?? 0.1, messages:oai };
   if(tools.length) body.tools = tools.map(t=>({type:'function', function:{name:t.name, description:t.description, parameters:t.input_schema}}));
   let d;
   if(viaProxy){
@@ -866,7 +1047,7 @@ async function send(){
   const text = $('txt').value.trim(), file = S.file;
   if(!text && !file) return;
   if(!apiKey()) return showErr('Спершу зареєструйтесь (оновіть сторінку).');
-  if(S.mode!=='pick' && !S.cat.length){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
+  if(!S.cat.length || !S.mx){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
   $('txt').value=''; grow(); S.file=null; renderAtt();
   $('hero').hidden=true; $('cards').hidden=true;
   addMsg({role:'me', text, att:file?.name});
@@ -907,6 +1088,8 @@ const PICK_RULES = `ПРАВИЛА ПІДБОРУ (як досвідчений �
 6. Уникай позицій «ЗРАЗОК», «частини», «НЕ ВОЗИМО», якщо є нормальна.
 7. Послуги, роботи, випробування — code null, match "none", note "послуга, не товар".
 8. match: "exact" — тип, розмір, система і (за наявності) бренд збігаються; "analog" — щось відрізняється (в note: ЩО саме, коротко); "none" — нічого придатного (краще none, ніж неправильний розмір).
+10. ЧИСТОВА (раковина, змішувач, унітаз, тумба, дзеркало, мийка, душ): модель/артикул назвав майстер — саме її. Інакше бери кандидата з позначкою «МАТРИЦЯ» з найвищим пріоритетом (A → B → C → D), що збігається за типом, кольором/покриттям, формою, монтажем і шириною з описом чи візуалізацією. Колір/форма не збігаються — це analog.
+11. Колекторну шафу код перерахує сам за шириною (вузол + байпас + колектор + кінцевий + 2×50 мм) — бери будь-яку шафу потрібного типу.
 9. Якщо не exact — дай query: інший короткий запит для повторного пошуку (тип + розмір + бренд, як пишуть у прайсі 1С, напр. "трійник натяжний 20х16х20 RAFTEC").`;
 // Закріплені коди бази (SK): якщо потреба схожа — код завжди серед кандидатів
 const PINS = [
@@ -934,7 +1117,7 @@ function mismatch(need, name){
   if(inner(n) && !outer(n) && outer(m) && !inner(m)) out.push('треба внутр. різьба'); if(outer(n) && !inner(n) && inner(m) && !outer(m)) out.push('треба зовн. різьба');
   return out;
 }
-const candLine = c => `${c[0]} | ${c[1]||'-'} | ${c[2]} | ${c[3]}`;
+const candLine = c => `${c[0]} | ${c[1]||'-'} | ${c[2]} | ${c[3]}${mxTag(c)}`;
 
 async function pickRound(list, prefs, ctx, effort){
   // list: [{i, need, cands:[...]}]
@@ -952,6 +1135,67 @@ async function pickRound(list, prefs, ctx, effort){
   return res.flat();
 }
 
+// ── Стабільне розпізнавання списку (режим «Порахувати») ──
+// Раніше весь файл розбирався ОДНИМ довгим запитом: відповідь обрізалась (ліміт токенів / 60 с проксі) — і з того самого файлу
+// виходило то 10, то 40, то 100 позицій, а частина (перехідники, крани) губилась. Тепер:
+// 1) рядки беремо кодом (Excel/CSV/текст/PDF з текстом) або переписуємо кожну сторінку-фото окремим коротким запитом;
+// 2) структуруємо шматками по 30 рядків паралельно, кожен рядок має номер i;
+// 3) звіряємо: кожен рядок або дав позицію, або позначений як не-товар; пропущені — повторний запит саме по них.
+const EX_CHUNK = 30;
+function exLinesFromText(t){
+  return String(t||'').split(/\r?\n/).map(l => l.replace(/,{2,}/g, ', ').replace(/^[,\s]+|[,\s]+$/g,'').replace(/\s{2,}/g,' ').trim())
+    .filter(l => /[A-Za-zА-Яа-яІіЇїЄєҐґ]{2}/.test(l) && !/^#\s/.test(l));
+}
+async function exTranscribe(file, said, wait){
+  if(file?.pdfText && file.pdfText.replace(/\s/g,'').length > 80) return exLinesFromText(file.pdfText);   // PDF з текстовим шаром — без розпізнавання
+  if(file?.text) return exLinesFromText(file.text);
+  if(file?.images?.length){
+    const n = file.images.length; let done = 0;
+    const pages = await pool(file.images.map((img, k) => async () => {
+      const ask = async () => json(textOf(await claude([{role:'user', content:[{type:'image', source:{type:'base64', media_type:'image/jpeg', data:img}},
+        {type:'text', text:`Сторінка ${k+1} з ${n} замовлення/списку матеріалів (може бути рукопис майстра, рахунок, таблиця). Перепиши ДОСЛІВНО КОЖЕН рядок-позицію зверху вниз разом з кількістю й одиницею, як написано. Нічого не пропускай, не об'єднуй, не виправляй, не додавай від себе. Перехідники, крани, фітинги, дрібниці — теж окремими рядками. Нерозбірливе слово — познач [?]. Шапку, реквізити, підписи, підсумки — не пиши.\nПоверни ТІЛЬКИ JSON: {"lines":["рядок 1","рядок 2"]}`}]}], {max_tokens:8000, reasoning:'low'})));
+      let r; try{ r = await ask(); }catch{ try{ r = await ask(); }catch{ r = {lines:[]}; } }
+      wait.phase = `Переписую сторінки · ${++done} з ${n}`;
+      return (r.lines||[]).map(String).filter(s => s.trim());
+    }), 4);
+    return pages.flat();
+  }
+  return exLinesFromText(said);
+}
+async function exStructure(lines, said, wait){
+  const prefsHint = said && said.length < 1500 ? `Повідомлення клієнта: ${said}\n` : '';
+  const ask = async part => json(textOf(await claude([{role:'user', content:`${TASK.calc}\n${prefsHint}\n${KB}\n
+Кожен рядок нижче має номер i. Для КОЖНОГО рядка поверни позицію (або кілька, якщо в рядку кілька товарів через кому — з тим самим i). Рядок, що не є товаром (шапка, підсумок, реквізити, «разом», дата) — {"i":N,"skip":true}. Послуги/роботи — окрема позиція як є. Не об'єднуй різні рядки, не пропускай перехідники, крани, фітинги.
+Сленг розшифровуй за базою, бренд за пріоритетом бази вписуй у search. Вказівки клієнта щодо брендів і систем — обов'язкові.
+Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15.
+РЯДКИ:\n${part.map(x => `${x.i}: ${x.t}`).join('\n')}\n
+Поверни ТІЛЬКИ JSON: {"items":[{"i":0,"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С","alt":"другий запит іншими словами","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}`}], {max_tokens:12000, reasoning:'low'}))).items || [];
+  const all = lines.map((t,i) => ({i, t})), parts = [];
+  for(let k=0;k<all.length;k+=EX_CHUNK) parts.push(all.slice(k,k+EX_CHUNK));
+  let done = 0;
+  const res = (await pool(parts.map(part => async () => {
+    let r; try{ r = await ask(part); }catch{ const h = Math.ceil(part.length/2); r = [...await ask(part.slice(0,h)).catch(()=>[]), ...await ask(part.slice(h)).catch(()=>[])]; }
+    wait.phase = `Розбираю рядки · ${Math.min(++done*EX_CHUNK, lines.length)} з ${lines.length}`; return r;
+  }), 6)).flat().filter(x => x && Number.isInteger(+x.i) && +x.i >= 0 && +x.i < lines.length);
+  // звірка: кожен рядок має бути або позицією, або skip
+  const seen = new Set(res.map(x => +x.i)), miss = all.filter(x => !seen.has(x.i));
+  if(miss.length){ wait.phase = `Дочитую пропущені рядки · ${miss.length}`;
+    for(let k=0;k<miss.length;k+=EX_CHUNK){ const r = await ask(miss.slice(k,k+EX_CHUNK)).catch(() => []); res.push(...r.filter(x => x && miss.some(m => m.i === +x.i))); } }
+  const got = new Set(res.map(x => +x.i)), lost = all.filter(x => !got.has(x.i));
+  const items = res.filter(x => !x.skip && (x.need || x.search)).sort((a,b) => +a.i - +b.i);
+  for(const x of lost) items.push({ i:x.i, need:x.t, search:x.t, alt:'', qty:1, unit:'шт', category:'rough_plumbing', note:'рядок не розібрано — перевірте' });
+  return items.sort((a,b) => +a.i - +b.i).map(x => ({...x, src: lines[+x.i]}));
+}
+async function extractList(file, said, wait){
+  wait.phase = file ? 'Читаю файл' : 'Розбираю список';
+  const lines = await exTranscribe(file, said, wait);
+  if(!lines.length) return { items:[], reply:'' };
+  const metaP = claude([{role:'user', content:`Замовлення майстра (перші рядки):\n${lines.slice(0,60).join('\n')}\n${said?`Повідомлення клієнта: ${said.slice(0,1500)}\n`:''}\nПоверни ТІЛЬКИ JSON: {"reply":"1-2 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком або порожньо","brands":["бренди, які клієнт вимагає"]}`}], {max_tokens:3000, reasoning:'low'}).then(d => json(textOf(d))).catch(() => ({}));
+  const items = await exStructure(lines, said, wait);
+  const meta = await metaP;
+  return { ...meta, items, lines: lines.length, checklist: [] };
+}
+
 async function calc(text, file, wait){
   const t0 = Date.now(); const tick = setInterval(()=>{ wait.typing = `${wait.phase||'Читаю'} · ${Math.round((Date.now()-t0)/1000)} с`; renderTyping(wait); }, 700);
   try{
@@ -964,9 +1208,10 @@ ${KB}
 Поверни ТІЛЬКИ JSON:
 {"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком, або порожньо","brands":["бренди, які клієнт вимагає, напр. RAFTEC"],"checklist":[{"rule":"","passed":true,"comment":""}],
 "items":[{"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С: тип + розмір + бренд","alt":"другий запит іншими словами (синонім, рос. назва, без бренду)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
+ЧИСТОВА за дизайном: для раковини, змішувача, унітаза, тумби, дзеркала, мийки, душу впиши в need з візуалізації/опису колір і покриття (білий глянець, чорний матовий, хром, брашоване золото…), форму, монтаж (підвісний, накладний, на стільницю) і ширину в мм, напр. «умивальник накладний на стільницю, білий, прямокутний, ш 600».
 Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15. ${S.mode==='calc'?'checklist лиши порожнім.':''}`;
-    const draft = json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
-    const needs = (draft.items||[]).slice(0,250);
+    const draft = S.mode === 'calc' ? await extractList(file, said, wait) : json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
+    const needs = (draft.items||[]).slice(0,400);
     if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
     const brands = (draft.brands||[]).filter(b => typeof b==='string' && b.trim()).slice(0,4);
     const prefs = [draft.prefs, said.length < 600 ? said : ''].filter(Boolean).join(' | ');
@@ -976,7 +1221,9 @@ ${KB}
 
     // Раунд 1: широкий пошук (3 запити, 20 кандидатів) + підбір із міркуваннями
     wait.phase = `Підбираю коди · ${needs.length} позицій`;
-    const r1 = needs.map((n,i) => ({ i, need:n.need, cands: [...new Set([...pinsFor(n.need||''), ...search([n.search, n.alt, n.need], 20, brands)])] }));
+    const mxC = n => { if(n.category !== 'finish_plumbing' && !mxKind(n.need)) return []; const k = mxKind(`${n.need} ${n.search}`); if(!k) return [];
+      return mxFind({ type:k, query:`${n.need} ${n.search||''}`, in_price:true }, 8).map(m => m.it); };
+    const r1 = needs.map((n,i) => ({ i, need:n.need, cands: [...new Set([...pinsFor(n.need||''), ...mxC(n), ...search([n.search, n.alt, n.need], 20, brands)])] }));
     for(const p of await pickRound(r1, prefs, ctx, 'medium')) if(Number.isInteger(+p.i)) picks.set(+p.i, p);
 
     // Перевірка розмірів кодом: «точний» з іншим розміром → аналог
@@ -1036,9 +1283,10 @@ ${KB}
       for(const [d,q] of Object.entries(cnt)){ const it = byCode.get(SLV[d]); if(!it) continue;
         items.push({ code:it[0], art:it[1], name:it[2], qty:q, unit:it[3], match:'exact', category:'rough_plumbing', price:Math.round(uah(it)*100)/100, note:'Похідна: гільзи до фітингів PUSH' }); }
     }
+    try{ cabFix(items, needs, S.mode === 'project'); }catch(e){ console.warn('cabFix', e); }
     const miss = items.filter(i=>i.code==='—').length, an = items.filter(i=>i.match==='analog').length;
     wait.typing=null;
-    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
+    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + (draft.lines ? `Рядків у замовленні: ${draft.lines}, позицій: ${needs.length}. ` : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
     wait.res = { title: draft.title||'Специфікація', items, checklist: draft.checklist||[], tab:(CATS.find(c=>items.some(i=>i.category===c[0]))||CATS[0])[0] };
     render(); save();
   } finally { clearInterval(tick); }
@@ -1046,18 +1294,22 @@ ${KB}
 
 async function pick(file, wait){
   const tools = [{ name:'search_catalog', description:'Пошук товарів у прайсі «Гарячої Точки». Повертає до 15 позицій: код | артикул | назва | од. | ціна грн. Шукай короткими запитами: тип + характеристика + бренд.',
-    input_schema:{type:'object', properties:{query:{type:'string'}}, required:['query']} }, {type:'web_search_20250305', name:'web_search', max_uses:6}];
+    input_schema:{type:'object', properties:{query:{type:'string'}}, required:['query']} },
+    { name:'search_matrix', description:'Пошук в асортиментній матриці чистової (пріоритет продажу A→D, колір, форма, розміри, монтаж, сегмент, посилання на сайт/B2B виробника). Повертає: код | назва | бренд | пріоритет | колір | форма | монтаж | Ш×Г×В | сегмент | ціна | посилання | інше.',
+      input_schema:{type:'object', properties:{type:{type:'string', enum:MX_TABS}, query:{type:'string', description:'слова: стиль, матеріал, особливості, бренд'}, color:{type:'string'}, shape:{type:'string'}, max_width:{type:'number'}, min_width:{type:'number'}}, required:['type']} }];
   const msgs = hist();
-  msgs[0].content = `${RULES}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Коли зрозуміло — шукай у прайсі інструментом search_catalog (кілька запитів) і запропонуй 2-4 варіанти: назва, код, ціна, чому підходить. Пропонуй лише те, що знайшов у прайсі. Для кожного запропонованого товару знайди інструментом web_search сторінку цього товару на сайті виробника (за артикулом) і дай посилання, щоб клієнт міг подивитись фото й характеристики. Формат кожного пункту: код — назва — ціна — посилання. Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
+  msgs[0].content = `${RULES}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + max_width) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
   const last = msgs[msgs.length-1];
   last.content = [...fileBlocks(file), {type:'text', text: last.content + (file?.text?`\n\nВміст файлу ${file.name}:\n${file.text.slice(0,20000)}`:'')}];
   const base = msgs.length;
   for(let step=0; step<8; step++){
     const d = await claude(msgs, {tools, max_tokens:6000});
     msgs.push({role:'assistant', content:d.content});
-    if(d.stop_reason === 'pause_turn'){ wait.typing = 'Шукаю сторінки товарів…'; renderTyping(wait); continue; }
+
     if(d.stop_reason !== 'tool_use'){ wait.typing=null; wait.text = msgs.slice(base).filter(m=>m.role==='assistant').map(m=>textOf(m)).join('') || textOf(d); render(); save(); return; }
     const results = d.content.filter(b=>b.type==='tool_use').map(b => {
+      if(b.name === 'search_matrix'){ wait.typing = `Шукаю в матриці: ${b.input.type||''} ${b.input.color||''} ${b.input.shape||''}`; renderTyping(wait);
+        return {type:'tool_result', tool_use_id:b.id, content: mxFind(b.input||{}, 12).map(mxLine).join('\n') || 'у матриці нічого не знайдено — спробуй ширше або search_catalog'}; }
       wait.typing = `Шукаю в прайсі: ${b.input.query}`; renderTyping(wait);
       return {type:'tool_result', tool_use_id:b.id, content: search(String(b.input.query||''),15).map(c=>`${c[0]} | ${c[1]} | ${c[2]} | ${c[3]} | ${fmt(uah(c))} грн`).join('\n') || 'нічого не знайдено'};
     });
