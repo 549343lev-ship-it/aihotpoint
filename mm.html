@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="https://hot-point.com.ua/image/hp_logo_ua.svg"><link rel="alternate icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23F2673A%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-size=%2216%22 font-family=%22Arial%22 font-weight=%22bold%22 fill=%22white%22 text-anchor=%22middle%22%3EГТ%3C/text%3E%3C/svg%3E">
+<title>Hotpoint.ai · тест MiniMax</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: чат на всю висоту — шапка, стрічка повідомлень, поле вводу внизу. Бренд «Гаряча Точка» */
+:root{
+  --brand:#F2673A;--brand-ink:#B8431C;--on-brand:#fff;--tint:#FFF0EA;
+  --bg:#F5F5F4;--surface:#fff;--sunk:#F5F5F4;--line:#DADADA;--fg:#1F1F1F;--muted:#5C5C5C;--graphite:#2B2B2B;--on-graphite:#fff;
+  --ok:#1E8A4C;--warn:#A86400;--warn-bg:#FFF4E0;
+  --sans:'Open Sans',system-ui,-apple-system,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;display:flex;flex-direction:column}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.in{max-width:860px;margin:0 auto;width:100%}
+header{background:var(--surface);border-bottom:3px solid var(--brand);flex:none}
+header .in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+.brandline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.word{font-weight:800;font-size:22px;letter-spacing:-.02em;color:var(--fg)}
+.word i{font-style:normal;color:var(--brand)}
+.tag{color:var(--muted);font-size:13px;font-weight:600}
+.hbtns{display:flex;gap:6px;flex:none}
+button{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 12px}
+button:hover{border-color:var(--brand)}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.btn{background:var(--brand-ink);border-color:var(--brand-ink);color:var(--on-brand)}
+.btn:hover{background:var(--brand);border-color:var(--brand)}
+.btn:disabled{opacity:.5;cursor:default}
+.ghost{background:transparent}
+#feed{flex:1;overflow-y:auto;min-height:0}
+#feed .in{display:flex;flex-direction:column;gap:14px;padding-block:20px}
+.hero{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.hero h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.hero h1 i{font-style:normal;color:var(--brand)}
+.hero p{margin:0;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.cards{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.card .n{width:28px;height:28px;border-radius:50%;background:var(--tint);color:var(--brand-ink);display:grid;place-items:center;font-weight:800;font-size:14px}
+.card h3{margin:0;font-size:15px;font-weight:700}
+.card p{margin:0;font-size:13px;color:var(--muted);flex:1}
+.card button{align-self:flex-start;font-size:13px;padding:7px 12px}
+.msg{display:flex;flex-direction:column;gap:6px;max-width:100%}
+.msg.me{align-items:flex-end}
+.bub{border-radius:16px;padding:10px 14px;max-width:min(640px,100%);white-space:pre-wrap;word-wrap:break-word;min-width:0}
+.me .bub{background:var(--tint);color:var(--fg);border-bottom-right-radius:4px}
+.ai .bub{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
+.ai .who{font-size:12px;font-weight:700;color:var(--brand-ink)}
+.att{font-size:12px;color:var(--muted)}
+.res{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;width:100%;min-width:0}
+.res h4{margin:0;font-size:15px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.between{justify-content:space-between}
+.small{font-size:12.5px;color:var(--muted)}
+.tabs button{font-size:12.5px;padding:5px 10px;border-radius:999px}
+.tabs button.on{background:var(--brand-ink);border-color:var(--brand-ink);color:var(--on-brand)}
+.tbox{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--sunk);color:var(--muted);padding:7px 9px}
+td{padding:6px 9px;border-top:1px solid var(--line);vertical-align:top}
+td.code{font-family:var(--mono);color:var(--brand-ink);white-space:nowrap;user-select:all}
+td.art{font-family:var(--mono);color:var(--muted);font-size:12px}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td input{width:62px;padding:4px;text-align:center;font:inherit;font-size:13px;background:var(--sunk);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+tr.miss td{background:var(--warn-bg)}
+tr.miss .nm{color:var(--warn);font-weight:600}
+.note{font-size:11.5px;color:var(--muted)}
+.x{border:0;background:transparent;color:var(--muted);padding:2px 6px}
+.sum{font-weight:700;font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;font-weight:600;font-size:13px}
+.rule{display:flex;gap:8px;font-size:13px;padding:5px 0;border-top:1px solid var(--line)}
+.ok{color:var(--ok);font-weight:800}.bad{color:var(--warn);font-weight:800}
+.typing{color:var(--muted);font-size:13px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .8s linear infinite;vertical-align:-1px;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+footer{flex:none;background:var(--surface);border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
+footer .in{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.modes button{font-size:12.5px;padding:5px 11px;border-radius:999px}
+.modes button.on{background:var(--tint);border-color:var(--brand);color:var(--brand-ink)}
+.comp{display:flex;align-items:flex-end;gap:8px;background:var(--sunk);border:1px solid var(--line);border-radius:16px;padding:6px}
+.comp:focus-within{border-color:var(--brand)}
+.comp textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font:inherit;resize:none;max-height:160px;padding:8px 4px;outline:none}
+.ic{width:40px;height:40px;padding:0;display:grid;place-items:center;border-radius:12px;flex:none}
+.ic svg{width:20px;height:20px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--tint);color:var(--brand-ink);border-radius:999px;padding:4px 6px 4px 10px}
+.chip button{border:0;background:transparent;padding:0 4px;color:inherit}
+.err{background:var(--warn-bg);color:var(--warn);font-size:13px;padding:8px 10px;border-radius:10px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet>div{background:var(--surface);width:100%;max-width:720px;max-height:85%;border-radius:18px 18px 0 0;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.sheet input[type=search],.sheet input[type=number]{font:inherit;color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.cat{overflow:auto;display:flex;flex-direction:column;gap:6px;min-height:0}
+.ci{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+.ci .c{font-family:var(--mono);font-size:12px;color:var(--brand-ink)}
+.files{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
+.fcard{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;max-width:340px;min-width:0}
+.fcard:hover{border-color:var(--brand)}
+.fcard img{width:64px;height:64px;object-fit:cover;object-position:top;border-radius:8px;border:1px solid var(--line);flex:none}
+.fic{width:64px;height:64px;border-radius:8px;background:var(--tint);color:var(--brand-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.ft{display:flex;flex-direction:column;min-width:0;font-size:13px}.ft span{color:var(--muted);font-size:12px}.ft u{color:var(--brand-ink);font-weight:600;font-size:12.5px;text-decoration:none;margin-top:2px}
+.msg.me .files{justify-content:flex-end}
+.bub a{color:var(--brand-ink);font-weight:600;word-break:break-all}
+
+/* Брендбук «Гаряча Точка» */
+.topband{background:var(--graphite);color:var(--on-graphite);font-size:12px;font-weight:600;flex:none}
+.topband .in{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:5px}
+.topband a{color:var(--on-graphite);text-decoration:none}
+.topband b{color:var(--brand)}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--brand);display:grid;place-items:center;flex:none}
+.mark svg{width:24px;height:24px}
+.brandwrap{display:flex;align-items:center;gap:10px;min-width:0}
+.desc{display:block;font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.card{border-top:3px solid var(--brand)}
+.card .n{background:var(--brand);color:var(--on-brand)}
+.hero h1{font-size:30px}
+.hero .slogan{color:var(--brand-ink);font-weight:700;font-size:14px}
+th{background:var(--brand-ink);color:var(--on-brand)}
+.res h4{color:var(--fg);font-weight:800;border-left:4px solid var(--brand);padding-left:8px}
+.ai .who{display:flex;align-items:center;gap:6px}
+.ai .who::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--brand)}
+.legal{font-size:11.5px;color:var(--muted);text-align:center}
+@media (max-width:560px){.topband .site{display:none}.tag{display:none}}
+
+/* ── Шапка «Гаряча Точка» ── */
+header{border-bottom:none;box-shadow:0 1px 0 var(--line)}
+header .in{padding-block:8px}
+.logo{display:flex;align-items:center;background:#fff;border-radius:10px;padding:4px 6px}
+.logo img{height:40px;width:auto;display:block}
+.logo.nologo img{display:none}.logo.nologo::after{content:'Гаряча Точка';font-weight:800;font-size:18px;color:#F2673A;padding:6px 4px}
+.aibadge{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;color:var(--brand-ink);background:var(--tint);border-radius:999px;padding:5px 10px;white-space:nowrap}
+.aibadge .dot{width:7px;height:7px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 0 rgba(242,103,58,.6);animation:ping 1.8s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(242,103,58,.55)}80%,100%{box-shadow:0 0 0 7px rgba(242,103,58,0)}}
+.mark,.brandline,.word,.tag{display:none}
+.hero h1 i{color:var(--brand)}
+@media (max-width:560px){.hide-s{display:none}.logo img{height:32px}.aibadge{display:none}#newBtn{padding:7px 10px}}
+
+/* ── Бокова панель чатів ── */
+.side{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.35)}
+.sideIn{position:absolute;left:0;top:0;bottom:0;width:min(320px,86%);background:var(--surface);border-right:3px solid var(--brand);padding:16px;padding-top:max(16px,env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;animation:slide .2s ease-out}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:none}}
+.clist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:4px;min-height:0}
+.citem{display:flex;align-items:center;gap:6px;border-radius:10px;padding:8px 10px;cursor:pointer;border:1px solid transparent}
+.citem:hover{border-color:var(--line)}
+.citem.on{background:var(--tint);border-color:var(--brand)}
+.citem .ct{flex:1;min-width:0}
+.citem .ct b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.citem .ct span{font-size:11.5px;color:var(--muted)}
+.citem .x{opacity:.5}
+
+/* ── Футуристичні роздуми ── */
+.think{position:relative;display:flex;gap:14px;align-items:flex-start;max-width:min(640px,100%);padding:14px 16px;border-radius:16px;border-bottom-left-radius:4px;background:var(--surface);overflow:hidden;isolation:isolate}
+.think::before{content:"";position:absolute;inset:-2px;z-index:-2;background:conic-gradient(from var(--a),#F2673A,#FFB38F,#B8431C,#FFE1D3,#F2673A);animation:spinA 2.4s linear infinite}
+.think::after{content:"";position:absolute;inset:2px;z-index:-1;border-radius:14px;background:linear-gradient(120deg,var(--surface) 0%,var(--surface) 40%,var(--tint) 50%,var(--surface) 60%,var(--surface) 100%);background-size:300% 100%;animation:sheen 2.8s linear infinite}
+@property --a{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes spinA{to{--a:360deg}}
+@keyframes sheen{from{background-position:100% 0}to{background-position:-200% 0}}
+.core{position:relative;width:46px;height:46px;flex:none}
+.core i{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--brand);border-right-color:var(--brand);animation:spin 1.1s linear infinite}
+.core i:nth-child(2){inset:6px;border-top-color:var(--brand-ink);border-right-color:transparent;border-left-color:var(--brand-ink);animation-duration:1.6s;animation-direction:reverse}
+.core i:nth-child(3){inset:13px;border:none;background:radial-gradient(circle,#FFD3BF 0,var(--brand) 55%,transparent 72%);animation:pulse 1.4s ease-in-out infinite}
+.core b{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:var(--brand);animation:orbit 2.2s linear infinite;transform-origin:2px 2px}
+.core b:nth-of-type(2){animation-delay:-.73s;background:#FFB38F}.core b:nth-of-type(3){animation-delay:-1.46s;background:var(--brand-ink)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(.75);opacity:.75}50%{transform:scale(1.05);opacity:1}}
+@keyframes orbit{from{transform:rotate(0) translateX(24px)}to{transform:rotate(360deg) translateX(24px)}}
+.tbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.tt{font-weight:700;font-size:13.5px;background:linear-gradient(90deg,var(--brand-ink),var(--brand),#FF9A6B,var(--brand-ink));background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 2.2s linear infinite}
+.bars{display:flex;gap:3px;height:3px}
+.bars span{flex:1;border-radius:2px;background:var(--line);overflow:hidden;position:relative}
+.bars span::after{content:"";position:absolute;inset:0;background:var(--brand);transform:translateX(-100%);animation:fill 1.8s ease-in-out infinite}
+.bars span:nth-child(2)::after{animation-delay:.25s}.bars span:nth-child(3)::after{animation-delay:.5s}.bars span:nth-child(4)::after{animation-delay:.75s}
+@keyframes fill{0%{transform:translateX(-100%)}50%{transform:none}100%{transform:translateX(100%)}}
+.tip{font-size:13px;color:var(--fg);min-height:2.9em;line-height:1.45}
+.tip small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-ink);margin-bottom:2px}
+.tip .cur{display:inline-block;width:7px;height:1em;background:var(--brand);vertical-align:-2px;margin-left:1px;animation:blink .8s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.think::before,.think::after,.core *,.tt,.bars span::after,.aibadge .dot{animation:none}}
+
+/* ══ Брендбук «Гаряча Точка» (Design System) ══
+   Layout: білий фон, ink-текст, orange ≤10% — знак, лінії-акценти, великі заголовки; кнопки orange-ink; прямі кути, без тіней */
+:root{--brand:#F2673A;--brand-ink:#B8431C;--on-brand:#FFFFFF;--tint:#FFF0EA;--fg:#1F1F1F;--text:#1F1F1F;--muted:#5C5C5C;--graphite:#2B2B2B;
+  --bg:#FFFFFF;--surface:#FFFFFF;--sunk:#F5F5F4;--alt:#F5F5F4;--line:#DADADA;--ctl:#8A8580;--warn:#8A5A00;--warn-bg:#FFF4E0;--ok:#1E7A45;
+  --sans:'Open Sans','Segoe UI',Arial,sans-serif;--mono:'JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--brand:#FF7A4D;--brand-ink:#FF9B78;--on-brand:#1A0E09;--tint:#3A2118;--fg:#F3F1EF;--text:#F3F1EF;--muted:#ABA7A3;--graphite:#D9D5D1;--bg:#161514;--surface:#161514;--sunk:#211F1E;--alt:#211F1E;--line:#3A3735;--ctl:#6F6A66;--warn:#F0B35A;--warn-bg:#3A2A10;--ok:#4CC382;color-scheme:dark}}
+:root[data-theme="dark"]{--brand:#FF7A4D;--brand-ink:#FF9B78;--on-brand:#1A0E09;--tint:#3A2118;--fg:#F3F1EF;--text:#F3F1EF;--muted:#ABA7A3;--graphite:#D9D5D1;--bg:#161514;--surface:#161514;--sunk:#211F1E;--alt:#211F1E;--line:#3A3735;--ctl:#6F6A66;--warn:#F0B35A;--warn-bg:#3A2A10;--ok:#4CC382;color-scheme:dark}
+body{font-family:var(--sans);color:var(--text);background:var(--bg);font-size:15px;line-height:22px}
+button,.btn,.comp,.chip,.modes button,.tabs button,.citem,td input,.sheet input{border-radius:4px!important}
+.card,.res,.tbox,table,.fcard,.sideIn,.sheet>div,.logo{border-radius:0!important}
+.bub,.think{border-radius:4px!important}.think::after{border-radius:2px!important}
+*{box-shadow:none}
+header{background:var(--surface);border-bottom:0;position:relative;z-index:5}
+.hrow .in{display:flex;align-items:center;gap:16px;padding-block:10px}
+.logo{display:flex;align-items:center;background:#fff;padding:4px 8px;text-decoration:none}
+.logo img{height:44px;width:auto;display:block}
+.logo.nologo::after{content:'Гаряча Точка';font-weight:800;font-size:18px;color:#F2673A}
+.aibadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;line-height:16px;color:var(--fg);background:transparent;border:1px solid var(--line);padding:4px 10px;border-radius:9999px;text-transform:none;letter-spacing:0}
+.aibadge .dot{background:var(--brand)}
+.phone{margin-left:auto;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg)}
+.phone::before{content:"";width:34px;height:34px;border-radius:9999px;border:1.5px solid var(--brand);flex:none;background:center/18px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F2673A' stroke-width='1.5'%3E%3Cpath d='M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2'/%3E%3C/svg%3E")}
+.phone b{display:block;color:var(--fg);font-weight:700;font-size:16px;line-height:20px}
+.phone span{display:block;color:var(--muted);font-size:12px;line-height:16px;font-weight:600}
+.phone>span:not(:first-child){display:none}
+.obar{background:var(--surface);border-bottom:2px solid var(--brand)}
+.obar .in{display:flex;align-items:center;gap:6px;min-height:46px}
+.obtn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid transparent;color:var(--fg);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.02em;padding:8px 12px}
+.obtn svg{width:18px;height:18px;color:var(--brand)}
+.obtn:hover{border-color:var(--ctl)}
+#newBtn{background:var(--brand-ink);color:var(--on-brand);border-color:var(--brand-ink)}
+#newBtn:hover{background:var(--brand);border-color:var(--brand)}
+.otitle{flex:1;color:var(--muted);font-size:13px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#feed{background:var(--bg)}
+.hero h1{color:var(--fg);font-weight:800;font-size:28px;line-height:34px}
+.hero h1 i{font-style:normal;color:var(--brand)}
+.hero .slogan{color:var(--fg);font-weight:700;font-size:16px;line-height:22px;text-transform:uppercase;letter-spacing:.02em}
+.hero p{color:var(--muted)}
+.card{background:var(--alt);border:0;border-top:3px solid var(--brand)}
+.card h3{text-transform:none;font-size:18px;line-height:24px;font-weight:700;color:var(--fg);letter-spacing:0}
+.card p{color:var(--muted)}
+.card .n{width:30px;height:30px;border-radius:9999px;background:transparent;border:1.5px solid var(--brand);color:var(--brand-ink);font-weight:700}
+.btn{background:var(--brand-ink);border:1px solid var(--brand-ink);color:var(--on-brand);font-weight:700;text-transform:none;font-size:14px;letter-spacing:0}
+.btn:hover{background:var(--brand);border-color:var(--brand)}
+button:not(.btn):not(.obtn):not(.x){border:1px solid var(--ctl);color:var(--fg);background:var(--surface)}
+button:not(.btn):not(.obtn):not(.x):hover{border-color:var(--brand-ink)}
+.bub a,.ft u{color:var(--brand-ink)}
+.me .bub{background:var(--tint);color:var(--fg)}
+.ai .bub{background:var(--surface);border:1px solid var(--line)}
+.ai .who{color:var(--muted);text-transform:none;font-size:12px;font-weight:600;letter-spacing:0}
+th{background:var(--alt);color:var(--fg);font-weight:700;border-bottom:1px solid var(--line);text-transform:none;letter-spacing:0;font-size:12px}
+td{border-top:1px solid var(--line)}
+td.code,td.art,.ci .c{font-family:var(--mono);color:var(--fg)}
+td.art{color:var(--muted)}
+tr.miss td{background:var(--tint)} tr.miss .nm{color:var(--brand-ink)}
+.res{background:var(--surface);border:1px solid var(--line)}
+.res h4{border-left:0;padding-left:0;font-size:20px;line-height:26px;font-weight:700}
+.modes button.on{background:var(--tint)!important;border-color:var(--brand-ink)!important;color:var(--brand-ink)!important}
+.comp{background:var(--surface);border:1px solid var(--ctl)}
+.comp:focus-within{border-color:var(--brand-ink)}
+.chip{background:var(--tint);color:var(--fg)}
+footer{background:var(--surface);border-top:1px solid var(--line)}
+.legal{color:var(--muted);font-size:12px}
+.err{background:var(--warn-bg);color:var(--warn)}
+.sideIn{background:var(--surface);border-right:1px solid var(--line);border-top:3px solid var(--brand)}
+.citem.on{background:var(--tint);border-color:var(--brand-ink)}
+.tip small{color:var(--brand-ink)}
+.fcard{background:var(--surface);border:1px solid var(--line)}
+.fic{border-radius:0;background:var(--tint);color:var(--brand-ink)}
+@media (max-width:720px){.otitle{display:none}.obar .in{justify-content:space-between}#capsBtn{display:none}.phone span{display:none}.phone b{font-size:15px}.aibadge{display:none}.logo img{height:36px}}
+
+/* ══ Рух і футуристичні стани (в межах брендбуку: без тіней, orange як акцент) ══ */
+@keyframes rise{from{opacity:0;transform:translateY(10px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+@keyframes popIn{from{opacity:0;transform:translateY(16px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes fadeBg{from{background:rgba(0,0,0,0);backdrop-filter:blur(0)}to{background:rgba(20,16,14,.42);backdrop-filter:blur(6px)}}
+@keyframes scan{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+@keyframes gridMove{to{background-position:0 24px,24px 0}}
+.sheet,.side{animation:fadeBg .28s ease-out forwards}
+.sheet>div,.capsIn{animation:popIn .38s cubic-bezier(.2,.8,.2,1) both}
+.msg.enter{animation:rise .42s cubic-bezier(.2,.8,.2,1) both}
+.hero,.cards .card{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.cards .card:nth-child(2){animation-delay:.07s}.cards .card:nth-child(3){animation-delay:.14s}
+.res{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.tbox tbody tr{animation:rise .3s ease-out both}
+.tbox tbody tr:nth-child(2){animation-delay:.02s}.tbox tbody tr:nth-child(3){animation-delay:.04s}.tbox tbody tr:nth-child(4){animation-delay:.06s}.tbox tbody tr:nth-child(5){animation-delay:.08s}.tbox tbody tr:nth-child(n+6){animation-delay:.1s}
+/* картки головної */
+.card{position:relative;overflow:hidden;transition:transform .25s,border-color .25s}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 30%,rgba(242,103,58,.10) 50%,transparent 70%);transform:translateX(-100%)}
+.card:hover{transform:translateY(-2px)}
+.card:hover::after{animation:scan 1.1s ease-out}
+.chead{display:flex;align-items:center;justify-content:space-between}
+.lic{width:28px;height:28px;color:var(--brand);flex:none}
+/* вікно «Що вміє помічник» */
+.capsIn{background:var(--surface);width:100%;max-width:980px;max-height:90%;overflow:auto;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom,0px));border-top:3px solid var(--brand);display:flex;flex-direction:column;gap:12px;position:relative;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:24px 24px;background-position:0 0,0 0;background-color:var(--surface)}
+.capsIn::before{content:"";position:absolute;inset:0;background:var(--surface);opacity:.9;pointer-events:none}
+.capsIn>*{position:relative}
+#capsSheet{align-items:center;padding:16px}
+.eyebrow{font-size:12px;font-weight:600;color:var(--brand-ink);letter-spacing:.06em;text-transform:uppercase}
+.capsT{font-size:24px;line-height:30px;font-weight:800;color:var(--fg)}
+.capsSec{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:10px;margin-top:4px}
+.capsSec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--brand),var(--line) 30%)}
+.cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.cgrid{grid-template-columns:1fr}}
+.cblk{position:relative;background:var(--surface);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;transition:border-color .2s}
+.cblk:hover{border-color:var(--brand)}
+.cblk::before{content:"";position:absolute;left:0;top:0;height:2px;width:40%;background:var(--brand);animation:scan 2.6s ease-in-out infinite}
+.cgrid .cblk:nth-child(2){animation-delay:.06s}.cgrid .cblk:nth-child(3){animation-delay:.12s}
+.cblk h3{margin:0;font-size:16px;line-height:22px;font-weight:700;color:var(--fg)}
+.cblk ul{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:20px;flex:1}
+.cblk li::marker{color:var(--brand)}
+.cblk.sm h3{font-size:15px}
+.capsLink{background:transparent!important;border:0!important;padding:4px 0;color:var(--brand-ink)!important;font-weight:700;font-size:14px}
+.capsLink:hover{text-decoration:underline}
+/* завантаження прайсу */
+#catStatus{position:relative;overflow:hidden;padding:6px 10px;border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+#catStatus.loading::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:35%;background:linear-gradient(90deg,transparent,var(--brand),transparent);animation:scan 1.3s linear infinite}
+#catStatus.loading::before{content:"";display:inline-block;width:8px;height:8px;border-radius:9999px;background:var(--brand);margin-right:8px;animation:ping 1.4s infinite}
+.chip .spin{color:var(--brand)}
+#attRow .chip{animation:rise .3s ease-out both}
+@media (prefers-reduced-motion:reduce){.sheet,.side,.sheet>div,.capsIn,.msg.enter,.hero,.card,.res,.tbox tbody tr,.cblk,.cblk::before,#catStatus::after{animation:none!important}}
+
+/* ══ Презентація ══ */
+body.introMode #feed,body.introMode footer{display:none}
+.intro{display:none;position:relative;flex:1;min-height:0;overflow:hidden;background:var(--surface)}
+body.introMode .intro{display:flex;align-items:center;justify-content:center}
+.net{position:absolute;inset:0;width:100%;height:100%;opacity:.9}
+.pipes path{stroke-width:3;stroke-dasharray:1600;stroke-dashoffset:1600;animation:draw 2.6s cubic-bezier(.6,.1,.2,1) forwards}
+.pipes .p1{stroke:var(--brand)}.pipes .p2{stroke:var(--graphite);opacity:.35;animation-delay:.3s}.pipes .p3{stroke:var(--brand);opacity:.55;animation-delay:.6s}.pipes .p4{stroke:var(--graphite);opacity:.25;animation-delay:.9s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.nodes circle{fill:var(--surface);stroke:var(--brand);stroke-width:2;opacity:0;animation:nodeIn .4s ease-out forwards,nodePulse 2.4s ease-in-out 3s infinite}
+.nodes circle:nth-child(1){animation-delay:.9s,3s}.nodes circle:nth-child(2){animation-delay:1.2s,3.2s}.nodes circle:nth-child(3){animation-delay:1.5s,3.4s}.nodes circle:nth-child(4){animation-delay:1.7s,3.6s}.nodes circle:nth-child(5){animation-delay:1.9s,3.8s}.nodes circle:nth-child(6){animation-delay:2.1s,4s}.nodes circle:nth-child(7){animation-delay:2.3s,4.2s}
+@keyframes nodeIn{from{opacity:0;r:0}to{opacity:1}}
+@keyframes nodePulse{0%,100%{stroke-width:2}50%{stroke-width:5}}
+.introIn{position:relative;max-width:760px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-block:28px;background:radial-gradient(closest-side,var(--surface) 70%,transparent)}
+.gauge{width:92px;height:92px;opacity:0;animation:rise .6s .2s cubic-bezier(.2,.8,.2,1) forwards}
+.gauge svg{width:100%;height:100%}
+.g-ring{fill:none;stroke:var(--graphite);stroke-width:4;stroke-dasharray:320;stroke-dashoffset:320;animation:draw 1.4s .3s ease-out forwards}
+.g-ticks line{stroke:var(--graphite);stroke-width:2.5}
+.g-dot{fill:var(--brand);transform-origin:60px 60px;animation:pulse 1.8s ease-in-out infinite}
+.g-hand{stroke:var(--graphite);stroke-width:3;stroke-linecap:square;transform-origin:60px 60px;transform:rotate(-120deg);animation:needle 2.2s .6s cubic-bezier(.3,1.4,.4,1) forwards}
+@keyframes needle{to{transform:rotate(40deg)}}
+.i-eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-ink);opacity:0;animation:rise .5s .9s both}
+.i-title{margin:0;font-size:clamp(44px,9vw,84px);line-height:1;font-weight:800;color:var(--fg);letter-spacing:-.02em;opacity:0;animation:rise .7s 1.1s cubic-bezier(.2,.8,.2,1) both}
+.i-title b{color:var(--brand);font-weight:800}
+.i-slogan{margin:0;font-size:16px;line-height:22px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:var(--fg);opacity:0;animation:rise .5s 1.5s both}
+.i-caps{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:4px}
+.i-caps span{border:1px solid var(--line);padding:6px 12px;font-size:13.5px;font-weight:600;color:var(--fg);background:var(--surface);opacity:0;animation:rise .45s both;position:relative;overflow:hidden}
+.i-caps span::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--brand);transform:scaleX(0);transform-origin:left;animation:grow .5s forwards}
+.i-caps span:nth-child(1){animation-delay:1.9s}.i-caps span:nth-child(1)::after{animation-delay:2.2s}
+.i-caps span:nth-child(2){animation-delay:2.15s}.i-caps span:nth-child(2)::after{animation-delay:2.45s}
+.i-caps span:nth-child(3){animation-delay:2.4s}.i-caps span:nth-child(3)::after{animation-delay:2.7s}
+@keyframes grow{to{transform:scaleX(1)}}
+.i-lead{margin:0;max-width:560px;color:var(--muted);opacity:0;animation:rise .5s 2.8s both}
+.i-start{position:relative;margin-top:8px;font-size:16px;padding:14px 26px;opacity:0;animation:rise .5s 3.2s both}
+.i-start::before{content:"";position:absolute;inset:-6px;border:2px solid var(--brand);border-radius:6px;opacity:0;animation:ring 1.8s 3.7s ease-out infinite}
+@keyframes ring{0%{opacity:.8;transform:scale(.96)}100%{opacity:0;transform:scale(1.12)}}
+.i-facts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:12px;font-weight:600;color:var(--muted);opacity:0;animation:rise .5s 3.5s both}
+.i-facts span+span::before{content:"•";color:var(--brand);margin-right:14px}
+.startTop{background:var(--brand-ink)!important;color:var(--on-brand)!important;border-color:var(--brand-ink)!important}
+.startTop:hover{background:var(--brand)!important;border-color:var(--brand)!important}
+/* підсвітка карток після «Можливості» */
+@keyframes callout{0%,100%{border-color:var(--line);outline-color:transparent}50%{outline-color:var(--brand)}}
+.cards.callout .card{outline:2px solid transparent;outline-offset:3px;animation:callout .7s ease-in-out 4}
+.cards.callout .card:nth-child(2){animation-delay:.12s}.cards.callout .card:nth-child(3){animation-delay:.24s}
+.cards.callout .card .btn{animation:ring2 .7s ease-in-out 4}
+@keyframes ring2{50%{background:var(--brand);border-color:var(--brand)}}
+@media (prefers-reduced-motion:reduce){.pipes path{stroke-dashoffset:0}.intro *,.intro *::before,.intro *::after{animation:none!important;opacity:1!important}.g-hand{transform:rotate(40deg)}}
+@media (max-width:720px){.startTop{padding:8px 10px!important;font-size:12px!important}}
+
+/* ══ Телефон ══ */
+.swipeHint{display:none}
+@media (max-width:720px){
+  body{font-size:14.5px}
+  /* шапка компактна */
+  .hrow .in{padding-block:6px;gap:10px}
+  .logo{padding:2px 4px}.logo img{height:30px!important}
+  .phone div{display:none}.phone::before{width:32px;height:32px;background-size:16px}
+  .obar .in{min-height:40px;gap:4px}
+  .obtn{padding:6px 8px;font-size:12px}
+  #sideBtn{font-size:0;gap:0;padding:6px}#sideBtn svg{width:22px;height:22px}
+  .startTop{padding:7px 12px!important;font-size:12px!important}
+  /* шапка в один рядок: ☰ · логотип · телефон · Почати роботу */
+  header{display:flex;align-items:center;gap:8px;padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(12px,env(safe-area-inset-left,0px));border-bottom:2px solid var(--brand)}
+  header .hrow,header .hrow .in,header .obar,header .obar .in{display:contents}
+  #sideBtn{order:1}.logo{order:2}.aibadge,.otitle,#capsBtn{display:none!important}.phone{order:3;margin-left:auto}#startBtn{order:4}
+  /* головна */
+  .hero{gap:4px;padding-top:0}
+  .hero h1{font-size:22px;line-height:28px}
+  .hero .slogan{font-size:13px;line-height:18px}
+  .hero p{font-size:13.5px}
+  .swipeHint{display:block;font-size:12px;font-weight:600;color:var(--muted);text-align:right;margin-bottom:-6px}
+  .cards{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px;margin-inline:-16px;padding-inline:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .cards::-webkit-scrollbar{display:none}
+  .cards .card{flex:0 0 82%;scroll-snap-align:center;padding:12px}
+  .card h3{font-size:16px;line-height:22px}
+  .card p{font-size:13px}
+  .card .btn,.card button{padding:7px 12px;font-size:13px}
+  #feed .in{padding-block:12px;gap:10px}
+  /* повідомлення */
+  .bub{padding:9px 12px;font-size:14px}
+  .think{padding:10px 12px;gap:10px}.core{width:38px;height:38px}.tip{font-size:12.5px}
+  /* низ: режими однією стрічкою, поле без зуму iOS */
+  footer .in{gap:6px;padding-top:8px}
+  .modes{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+  .modes::-webkit-scrollbar{display:none}
+  .modes button{flex:none;font-size:12px;padding:5px 10px}
+  .comp{padding:4px;gap:4px}
+  .comp textarea{font-size:16px;padding:7px 4px}
+  .ic{width:38px;height:38px}
+  .legal{display:none}
+  .err,#catStatus{font-size:12px;padding:6px 9px}
+  /* результат */
+  .res{padding:10px;gap:8px}
+  .res h4{font-size:16px;line-height:22px}
+  .res .row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .res .row::-webkit-scrollbar{display:none}
+  .res .row>*{flex:none}
+  .res .row button{padding:6px 10px;font-size:12.5px}
+  .res .row.between{flex-wrap:wrap}
+  .tabs button{font-size:12px;padding:4px 9px}
+  table.spec{min-width:0}
+  table.spec thead{display:none}
+  table.spec tbody,table.spec tr,table.spec td{display:block}
+  table.spec tr{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"name name name x" "code art art art" "qty unit . sum";gap:4px 8px;padding:10px;border-top:1px solid var(--line)}
+  table.spec tr:first-child{border-top:0}
+  table.spec td{border:0;padding:0}
+  table.spec td:nth-child(1),table.spec td:nth-child(7){display:none}
+  table.spec td:nth-child(2){grid-area:code;font-size:12.5px}
+  table.spec td:nth-child(3){grid-area:art;font-size:12px;align-self:center}
+  table.spec td:nth-child(4){grid-area:name;font-size:13.5px;line-height:19px}
+  table.spec td:nth-child(5){grid-area:qty}
+  table.spec td:nth-child(5) input{width:72px;padding:6px;font-size:16px}
+  table.spec td:nth-child(6){grid-area:unit;align-self:center}
+  table.spec td:nth-child(8){grid-area:sum;align-self:center;font-weight:700}
+  table.spec td:nth-child(9){grid-area:x;align-self:start}
+  /* вікна знизу з «ручкою», свайп вниз закриває */
+  .sheet{align-items:flex-end!important;padding:0!important}
+  .sheet>div,.capsIn{max-height:88%!important;width:100%;padding-top:22px!important;position:relative}
+  .sheet>div::before,.capsIn::after{content:"";position:absolute;top:8px;left:50%;width:42px;height:4px;margin-left:-21px;border-radius:9999px;background:var(--ctl);opacity:.6}
+  .capsT{font-size:20px;line-height:26px}
+  .cblk{padding:12px}.cblk ul{font-size:13px}
+  /* презентація */
+  .i-lead{font-size:13.5px}
+  .i-start{padding:12px 22px;font-size:15px}
+}
+
+/* ══ Спокійний робочий екран: лише три плитки ══ */
+#hero,.swipeHint{display:none!important}
+.logo,.logo:hover{background:transparent!important;padding:0!important}
+body.emptyChat #msgs{min-height:100%;justify-content:center}
+.cards{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;overflow:visible!important;margin:0!important;padding:0!important}
+.tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:28px;min-height:170px;padding:20px!important;text-align:left;background:var(--alt)!important;border:0!important;border-top:3px solid var(--brand)!important;border-radius:0!important;cursor:pointer;position:relative;overflow:hidden;transition:transform .25s;animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.tile:nth-child(2){animation-delay:.07s}.tile:nth-child(3){animation-delay:.14s}
+.tile b{font-size:20px;line-height:26px;font-weight:700;color:var(--fg)}
+.tic{width:34px;height:34px;color:var(--brand)}
+.tile::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 30%,rgba(242,103,58,.12) 50%,transparent 70%);transform:translateX(-100%)}
+.tile:hover{transform:translateY(-3px)}.tile:hover::after{animation:scan 1.1s ease-out}
+.tile:focus-visible{outline:2px solid var(--brand-ink);outline-offset:3px}
+.cards.callout .tile{outline:2px solid transparent;outline-offset:3px;animation:callout .7s ease-in-out 4}
+.cards.callout .tile:nth-child(2){animation-delay:.12s}.cards.callout .tile:nth-child(3){animation-delay:.24s}
+.tileIn{background:var(--surface);width:100%;max-width:560px;border-top:3px solid var(--brand);padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))}
+#tileSheet{align-items:center;padding:16px}
+.tpanel{display:flex;flex-direction:column;gap:12px}
+.tpanel h2{margin:0;font-size:24px;line-height:30px;font-weight:800;color:var(--fg)}
+.tpanel p{margin:0;color:var(--muted);font-size:15px;line-height:23px}
+.tpanel .tic{width:40px;height:40px}
+@media (max-width:720px){
+  .cards{grid-template-columns:1fr;gap:10px}
+  .tile{flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;min-height:0;padding:16px!important}
+  .tile b{font-size:16px;line-height:22px}
+  .tic{width:28px;height:28px;flex:none}
+  #tileSheet{align-items:flex-end;padding:0}
+  .tileIn{max-width:none;padding-top:26px;position:relative}
+  .tpanel h2{font-size:20px;line-height:26px}.tpanel p{font-size:14px;line-height:21px}
+}
+</style>
+<style>body{margin:0;padding-top:env(safe-area-inset-top,0px)}</style>
+</head>
+<body>
+<div id="mmCost" style="position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:999;font:11px/1.3 'Open Sans',sans-serif;background:#fff3cd;color:#664d03;border:1px solid #ffe69c;border-radius:8px;padding:3px 10px;white-space:nowrap;max-width:96vw;overflow:hidden;text-overflow:ellipsis">Тест: MiniMax M3.1 Flash</div>
+
+<header>
+  <div class="gut hrow"><div class="in">
+    <a class="logo" href="https://hot-point.com.ua/" target="_blank" rel="noopener"><img src="https://hot-point.com.ua/image/hp_logo_ua.svg" alt="" onerror="this.parentNode.classList.add('nologo')"></a>
+    <span class="aibadge"><span class="dot"></span>ШІ-помічник</span>
+    <a class="phone" href="tel:0800305777"><div><b>0-800-305-777</b><span>безкоштовно по Україні</span></div></a>
+  </div></div>
+  <div class="obar gut"><div class="in">
+    <button class="obtn" id="sideBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Мої чати</button>
+    <span class="otitle"></span>
+    <button class="obtn ghostw" id="capsBtn">Можливості</button>
+    <button class="obtn ghostw" id="newBtn" hidden>+ Новий чат</button>
+    <button class="obtn startTop" id="startBtn">Почати роботу</button>
+  </div></div>
+</header>
+
+<aside id="side" class="side" hidden><div class="sideIn">
+  <div class="row between"><b>Мої чати</b><button class="ghost" id="sideClose" aria-label="Закрити">✕</button></div>
+  <button class="btn" id="sideNew">+ Новий чат</button>
+  <div id="chatList" class="clist"></div>
+  <div class="small">Чати зберігаються в цьому браузері.</div>
+</div></aside>
+<section id="intro" class="intro gut" aria-label="Hotpoint.ai">
+  <svg class="net" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g class="pipes" fill="none" stroke-linecap="square">
+      <path class="p1" d="M-20 380 H260 V200 H520 V120 H760"/>
+      <path class="p2" d="M-20 430 H340 V300 H640 V220 H980 V90 H1220"/>
+      <path class="p3" d="M1220 330 H900 V420 H600 V470 H180"/>
+      <path class="p4" d="M760 120 H1040 V260 H1220"/>
+    </g>
+    <g class="nodes"><circle cx="260" cy="380" r="5"/><circle cx="520" cy="200" r="5"/><circle cx="760" cy="120" r="6"/><circle cx="640" cy="300" r="5"/><circle cx="980" cy="220" r="5"/><circle cx="900" cy="420" r="5"/><circle cx="1040" cy="260" r="5"/></g>
+  </svg>
+  <div class="introIn">
+    <div class="gauge" aria-hidden="true"><svg viewBox="0 0 120 120"><circle class="g-ring" cx="60" cy="60" r="50"/><g class="g-ticks"><line x1="60" y1="14" x2="60" y2="22" transform="rotate(-120 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(-100 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(-80 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(-60 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(-40 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(-20 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(0 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(20 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(40 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(60 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(80 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(100 60 60)"/><line x1="60" y1="14" x2="60" y2="22" transform="rotate(120 60 60)"/></g><circle class="g-dot" cx="60" cy="60" r="20"/><line class="g-hand" x1="60" y1="60" x2="60" y2="24"/></svg></div>
+    <div class="i-eyebrow">ШІ-помічник «Гарячої Точки»</div>
+    <h1 class="i-title"><span>Hotpoint</span><b>.ai</b></h1>
+    <p class="i-slogan">Все, що Вам потрібно і навіть більше…</p>
+    <div class="i-caps"><span>Рахує товар</span><span>Проєктує мережі</span><span>Підбирає сантехніку</span></div>
+    <p class="i-lead">Фото рукопису, дизайн-проєкт або кілька слів — і за хвилини специфікація з кодами з прайсу, сумою та посиланнями на товари.</p>
+    <button class="btn i-start" id="introStart">Почати роботу <span aria-hidden="true">→</span></button>
+    <div class="i-facts"><span>16 років на ринку</span><span>9 міст</span><span>власний сервісний центр</span><span>0-800-305-777</span></div>
+  </div>
+</section>
+<main id="feed" class="gut"><div class="in" id="msgs">
+  <section class="hero" id="hero">
+    <h1>Ваш <i>сантехнічний помічник</i> від «Гарячої Точки»</h1>
+    <p class="slogan">Все, що Вам потрібно і навіть більше…</p>
+    <p>Рахую товар, роблю проєкти інженерних мереж і підбираю сантехніку з прайсу «Гарячої Точки». Оберіть, з чого почати:</p>
+    <div><button id="capsBtn2" class="capsLink">Що вміє помічник →</button></div>
+  </section>
+  <div class="cards" id="cards"><button class="tile" data-tile="project"><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M8 21v-6h8v6M3 12h18"/></svg><b>Розрахунок проекту</b></button><button class="tile" data-tile="calc"><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><b>Розрахунок товару</b></button><button class="tile" data-tile="pick"><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9 11h4M11 9v4"/></svg><b>Індивідуальний пошук товарів</b></button></div>
+</div></main>
+
+<footer class="gut"><div class="in">
+  <div class="modes" id="modes" hidden>
+    <button data-m="calc" class="on">Порахувати товар</button>
+    <button data-m="project">Проєкт мереж</button>
+    <button data-m="pick">Підібрати товар</button>
+  </div>
+  <div id="catStatus" class="small" hidden></div>
+  <div id="err" class="err" hidden></div>
+  <div id="attRow" class="row" hidden></div>
+  <div class="comp">
+    <button class="ic ghost" id="attBtn" title="Додати фото або файл" aria-label="Додати файл"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5l-8.5 8.5a6 6 0 01-8.5-8.5l9-9a4 4 0 015.7 5.7l-9 9a2 2 0 01-2.8-2.8L15 7.5"/></svg></button>
+    <textarea id="txt" rows="1" placeholder="Напишіть повідомлення…"></textarea>
+    <button class="ic btn" id="send" title="Надіслати" aria-label="Надіслати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+  <div class="legal">Ціни роздрібні на 05.07.2026, остаточні — у менеджера · 0-800-305-777</div>
+  <input id="file" type="file" accept="image/*,application/pdf,.xlsx,.xls,.csv,.txt" hidden>
+</div></footer>
+
+<div class="sheet" id="tileSheet" hidden><div class="tileIn"><section class="tpanel" data-panel="project" hidden><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M8 21v-6h8v6M3 12h18"/></svg><h2>Розрахунок проекту</h2><p>Надішліть дизайн-проєкт у PDF або опишіть об’єкт. Я прийму системні рішення за регламентом майстра — ввід води, стояк, котел, техвузол — порахую метраж води, каналізації, теплої підлоги й кабелю і складу специфікацію з кодами з прайсу.</p><div class="row"><button class="btn" data-start="project">Почати</button><button data-ex="project">Приклад</button></div></section><section class="tpanel" data-panel="calc" hidden><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><h2>Розрахунок товару</h2><p>Фото рукопису майстра, рахунок іншого постачальника, Excel або список текстом. Підберу кожну позицію з прайсу «Гарячої Точки» з кодом 1С і порахую суму. Аналоги позначу, а чого немає — підсвічу. Результат — таблиця з кнопками для 1С та Excel.</p><div class="row"><button class="btn" data-start="calc">Почати</button><button data-ex="calc">Приклад</button></div></section><section class="tpanel" data-panel="pick" hidden><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9 11h4M11 9v4"/></svg><h2>Індивідуальний пошук товарів</h2><p>Дизайн-радіатори, змішувачі, унітази, автоматика. Опишіть, що бажаєте: стиль, колір, розміри, підключення, бюджет. Запропоную 2–4 варіанти з цінами й посиланнями на сторінки товарів у виробника.</p><div class="row"><button class="btn" data-start="pick">Почати</button><button data-ex="pick">Приклад</button></div></section></div></div>
+<div class="sheet" id="capsSheet" hidden><div class="capsIn">
+  <div class="row between"><div><div class="eyebrow">Hotpoint.ai</div><b class="capsT">Що вміє помічник</b></div><button id="capsClose">Закрити</button></div>
+  <div class="capsSec">Основні завдання</div>
+  <div class="cgrid">
+    <section class="cblk"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><h3>Порахувати товар</h3><ul><li>Фото рукопису, рахунок іншого постачальника, Excel або просто текст</li><li>Коди 1С (11 знаків) з прайсу «Гарячої Точки»</li><li>Аналоги — з поміткою, чого не знайшлось — підсвічено</li></ul><div class="row"><button class="btn" data-start="calc">Почати</button><button data-ex="calc">Приклад</button></div></section>
+    <section class="cblk"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M8 21v-6h8v6M3 12h18"/></svg><h3>Проєкт інженерних мереж</h3><ul><li>Дизайн-проєкт PDF або опис об’єкта</li><li>Системні рішення за регламентом майстра: ввід, стояк, котел, техвузол</li><li>Метраж і специфікація по розділах, перевірка 17 правил</li></ul><div class="row"><button class="btn" data-start="project">Почати</button><button data-ex="project">Приклад</button></div></section>
+    <section class="cblk"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9 11h4M11 9v4"/></svg><h3>Підібрати товар</h3><ul><li>Дизайн-радіатори, змішувачі, унітази, автоматика</li><li>Уточнює стиль, розміри, підключення, бюджет</li><li>2–4 варіанти з цінами й посиланням на сторінку товару</li></ul><div class="row"><button class="btn" data-start="pick">Почати</button><button data-ex="pick">Приклад</button></div></section>
+  </div>
+  <div class="capsSec">Як працювати з результатом</div>
+  <div class="cgrid">
+    <section class="cblk sm"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9"/></svg><h3>Таблиця для бази</h3><ul><li>Кількість змінюється прямо в таблиці</li><li>Три кнопки копіювання для 1С</li><li>Excel з вкладками по розділах</li></ul></section>
+    <section class="cblk sm"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M21 12.5l-8.5 8.5a6 6 0 01-8.5-8.5l9-9a4 4 0 015.7 5.7l-9 9a2 2 0 01-2.8-2.8L15 7.5"/></svg><h3>Що можна надіслати</h3><ul><li>PDF до 100 сторінок, фото, Excel, TXT</li><li>Або просто напишіть своїми словами</li></ul></section>
+    <section class="cblk sm"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg><h3>Пам’ять чатів</h3><ul><li>Кожна розмова зберігається</li><li>«Мої чати» — повернутись до будь-якої</li></ul></section>
+  </div>
+</div></div>
+<div class="sheet" id="exSheet" hidden><div style="overflow:auto">
+  <div class="row between"><b id="exTitle" style="font-size:16px"></b><button class="ghost" id="exClose">Закрити</button></div>
+  <div id="exBody" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div class="row"><button class="btn" id="exTry">Спробувати так само</button><span class="small">Приклад з реального об’єкта; ціни будуть з актуального прайсу.</span></div>
+</div></div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+// ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
+const MM = { minimax:{ url:'https://api.minimax.io/anthropic/v1/messages', model:'MiniMax-M3.1-Flash' },
+             openrouter:{ url:'https://openrouter.ai/api/v1/chat/completions', model:'minimax/minimax-m3.1-flash' } };
+const provider = () => /^sk-or-/.test(apiKey()||'') ? 'openrouter' : 'minimax';
+const USAGE = { in:0, out:0 };
+const CATS = [['rough_plumbing','Чорнова'],['finish_plumbing','Чистова'],['rough_electrical','Електрика']];
+const STARTERS = { calc:'Я хочу порахувати товар. Ось мій список: ', project:'Я хочу зробити проєкт інженерних мереж за дизайн-проєктом. Квартира ', pick:'Я хочу підібрати ' };
+// Прайси «Гарячої Точки» у Google Таблицях (папка ПРАЙСИ). Доступ: «усі, хто має посилання — читач».
+const SHEETS = {"КОТЛИ":"1udjiZhYnUxmHusoYuzG7qQ7TvF7rirlvpp4pelIcRDc","ОПАЛЕННЯ":"1vWm5I3P4nNbfh2OfwBS9G81N_SWMePMyPs_wOgR_g3o","Електрика":"1mMPPrrq6lCbBdDWVTfvA5Ej99D35NWGpuoi7-LYnxXw","ПЛАСТИК":"11zZPqhDVWnUHek36OiK5pPW2ZEK-Sgh6jXjs8a1AdBQ","ШЛАНГИ":"11LJ47i4c20IjYH3-vVT7VAgl0da2ALRvxl5jpEYosiY","ПЕРЕХОДНИКИ":"1PHPT3Bt37Z35_Z8jnR2iXMl2NX9FuteELDEcCK_9qVQ","ТЕПЛОВІ НАСОСИ":"1xm2H1tRj4oIUl7xAzu9n8kInOG8-LJ20dt7UICc4SvA","СИСТЕМИ PUSH":"11c18R-TbCBug2rfkR0h4wqJlecKwEYusRomdKE6uKSo","АВТОМАТИКА":"1RFS_zDHAXinHNO9GCr0phhl3XMMP6zDqGPun0k_mT4E","НАСОСНА ТЕХНІКА":"1f6s3RhwlZETye9L0VN0TlxPXANNh4DyNFGbyI7acBsE","АРМАТУРА БЕЗПЕКИ":"18n0KH_yltkrqxjFMnhaK-HtiDn5ZXVaH67qyyHvTepk","РАДІАТОРИ":"13PrHXS8W7sZ9DH-KRhpZwTA8iwRX49Zzf5pBjFz7UrM","САНФАЯНС":"1n-agqoTPiAfzugKdLFWHSx1gRdPJb-7fAboRGB4xzNU","ЗМІШУВАЧІ":"1gloPCAAfX3VF711u_HEbDmwFwPPM8QTMVSxZmsjcw1w","ТЕПЛА ПІДЛОГА":"1i3wkgApd4dhPFrST2hYF8zVW_bQBD1QOMA7QHwxJRHM","КАНАЛІЗАЦІЯ":"1kDOvECORxgG2avCkdL0WUM7WXHbXLZVEI6UjJo3iYjQ","СИФОНИ ТА АРМАТУРА":"1EB2uYZQPQaGM7ZWAIEkGC4JNAwM0rD1XjnIyjHvi3pU","ВОДОНАГРІВАЧІ":"1yeF0NMfOEdMIoRin5YJVDzSkUDwkFBOXfJ6_PeBj49s","ОЧИСТКА":"1PXh5oBA5IuuOZ29R8xhSouO9ANmGB1TZ2OvrGCWBHpg","ЗАПІРНА АРМАТУРА":"18wAg1R4pko1pDziQHtJQH7oj-9D3LU4-xGOGaKl78jY","РУШНИКОСУШКИ":"1ecOEuNQdrPDmFfathteTcGFWlbx6vp8dM9M3Wf6Dn0A","ЛІЧИЛЬНИКИ":"1_TdtUqoH-hSBMtSZP53bq4yLdYfwV-sIMoPnEjpGCoQ","МЕТАЛОПЛАСТИК":"1n_Y-VK6EsyL83UHnaP1JPH_UbiFi9YDfOQbBeZrzl8k","КРІПЛЕННЯ":"1QG4FufKBQ9YDj2NjaSyAaJShW_9C6pfoOUQbbp7g7_I","УТЕПЛЮВАЧ":"1DLobIgZsfWI40-snEnmlcji5Z0rx0uQaPeQLGkEddIE","ВОДОМІРИ":"193DTjffBV6SuiMyqAF9zIT7UnY5obcMtdJKply5TEVs"};
+const fmt = n => (Math.round(n*100)/100).toLocaleString('uk-UA');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S = { cid:null, mode:'calc', file:null, cat:[], usd:45.5, eur:51, chat:[], busy:false, catPromise:null };
+const ls = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
+
+// ── Ключ: приходить у посиланні …#key=… і запам'ятовується в браузері ──
+(function(){ const m = location.hash.match(/key=([^&]+)/); if(m){ ls.set('hpkey_mm', decodeURIComponent(m[1])); history.replaceState(null,'',location.pathname); } })();
+const apiKey = () => ls.get('hpkey_mm');
+
+// ── Прайс з Google Таблиць: [code, art, name, unit, price, usd(0/1), group] ──
+const norm = s => s.toLowerCase().replace(/ø/g,'ф').replace(/[×*]/g,'х').replace(/(\d)x(\d)/g,'$1х$2').replace(/[,"'«»()]/g,' ');
+let HAY = [];
+const num = v => { const n = parseFloat(String(v).replace(/[\s ]/g,'').replace(',','.')); return isFinite(n) ? n : NaN; };
+function parseRows(rows, group){
+  const out = [];
+  for(const r of rows){
+    const cells = r.map(v => String(v ?? '').trim());
+    const ci = cells.findIndex(v => /^\d{3,11}$/.test(v.replace(/\s/g,''))); if(ci < 0) continue;
+    let ni = -1; cells.forEach((v,i) => { if(i!==ci && /[A-Za-zА-Яа-яІіЇїЄє]{3}/.test(v) && v!=='USD' && v!=='EUR' && (ni<0 || v.length > cells[ni].length)) ni = i; });
+    if(ni < 0) continue;
+    let pi = -1; for(let i=cells.length-1;i>ni;i--){ if(cells[i] && num(cells[i]) > 0){ pi = i; break; } }
+    if(pi < 0) continue;
+    let name = cells[ni], unit = 'шт'; const m = name.match(/^(.*),\s*([^,]*)$/); if(m){ name = m[1].trim(); unit = m[2].trim(); }
+    const art = cells.slice(ci+1, ni).find(v => v) || '';
+    if(!unit && !art) continue; // рядок-група
+    out.push([cells[ci].replace(/\s/g,'').padStart(11,'0'), art, name, unit || 'шт', num(cells[pi]), cells.includes('USD') ? 1 : cells.includes('EUR') ? 2 : 0, group]);
+  }
+  return out;
+}
+async function loadCatalog(){
+  const status = $('catStatus'); status.hidden = false; status.classList.add('loading');
+  const names = Object.keys(SHEETS); let done = 0, failed = 0; const map = new Map();
+  status.textContent = 'Завантажую прайс…';
+  await Promise.all(names.map(async g => {
+    try{
+      const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEETS[g]}/gviz/tq?tqx=out:csv`);
+      if(!res.ok) throw new Error(res.status);
+      const csv = await res.text(); if(csv.trim().startsWith('<')) throw new Error('доступ');
+      const wb = XLSX.read(csv, {type:'string', raw:true});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:''});
+      for(const it of parseRows(rows, g)) map.set(it[0], it);
+    }catch(e){ failed++; }
+    status.textContent = `Завантажую прайс… ${++done} з ${names.length}`;
+  }));
+  S.cat = [...map.values()]; HAY = S.cat.map(it => norm(`${it[0]} ${it[1]} ${it[2]} ${it[6]}`));
+  if(!S.cat.length){ status.classList.remove('loading'); status.textContent = 'Не вдалося відкрити прайс. Перевірте, що папка ПРАЙСИ в Google Drive відкрита на перегляд «усім, хто має посилання».'; status.className = 'err'; return; }
+  status.classList.remove('loading');
+  status.textContent = `Прайс: ${S.cat.length.toLocaleString('uk-UA')} товарів${failed?` (не відкрилось файлів: ${failed})`:''}`;
+  setTimeout(() => { if(!failed) status.hidden = true; }, 2500);
+}
+const uah = it => it[5]===1 ? it[4]*S.usd : it[5]===2 ? it[4]*S.eur : it[4];
+async function loadRates(){ try{ const r = await (await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json')).json(); for(const x of r){ if(x.cc==='USD') S.usd = x.rate; if(x.cc==='EUR') S.eur = x.rate; } }catch{} }
+function search(q, limit){
+  const terms = norm(q).split(/\s+/).filter(Boolean); if(!terms.length) return S.cat.slice(0,limit);
+  const sc = [];
+  for(let i=0;i<S.cat.length;i++){ let s=0; const h=HAY[i]; for(const t of terms) if(h.includes(t)) s += t.length>2?2:1; if(s) sc.push([s,i]); }
+  sc.sort((a,b)=>b[0]-a[0]); return sc.slice(0,limit).map(x=>S.cat[x[1]]);
+}
+
+// ── Режими і заготовки ──
+let setMode = function(m){ S.mode = m; document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on', b.dataset.m===m)); }
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+document.querySelectorAll('[data-start]').forEach(b => b.onclick = () => { setMode(b.dataset.start); const t=$('txt'); t.value=STARTERS[b.dataset.start]; grow(); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
+
+$('capsClose').onclick = () => $('capsSheet').hidden = true;
+$('capsBtn2').onclick = () => { $('capsSheet').hidden = false; };
+$('capsSheet').addEventListener('click', e => { if(e.target === $('capsSheet') || e.target.closest('[data-start],[data-ex]')) $('capsSheet').hidden = true; });
+const grow = () => { const t=$('txt'); t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,160)+'px'; };
+$('txt').oninput = grow;
+$('txt').onkeydown = e => { if(e.key==='Enter' && !e.shiftKey && !e.isComposing && matchMedia('(hover:hover)').matches){ e.preventDefault(); send(); } };
+
+// ── Файли ──
+$('attBtn').onclick = () => $('file').click();
+$('file').onchange = e => { e.target.files[0] && take(e.target.files[0]); e.target.value=''; };
+document.body.ondragover = e => e.preventDefault();
+document.body.ondrop = e => { e.preventDefault(); e.dataTransfer.files[0] && take(e.dataTransfer.files[0]); };
+const b64 = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result.split(',')[1]); r.readAsDataURL(blob); });
+const toBlob = c => new Promise(ok=>c.toBlob(ok,'image/jpeg',0.85));
+async function shrink(file){ const img=await createImageBitmap(file); const k=Math.min(1,1800/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=img.width*k; c.height=img.height*k; c.getContext('2d').drawImage(img,0,0,c.width,c.height); return toBlob(c); }
+async function pdfPages(file){
+  const pdf = await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise; const out=[];
+  for(let p=1;p<=Math.min(pdf.numPages,20);p++){ const pg=await pdf.getPage(p); const v0=pg.getViewport({scale:1}); const v=pg.getViewport({scale:Math.min(2,1600/Math.max(v0.width,v0.height))});
+    const c=document.createElement('canvas'); c.width=v.width; c.height=v.height; await pg.render({canvasContext:c.getContext('2d'),viewport:v}).promise; out.push(await toBlob(c)); }
+  return out;
+}
+async function take(f){
+  hideErr(); $('attRow').hidden=false; $('attRow').innerHTML='<span class="chip"><span class="spin"></span>Готую файл…</span>';
+  try{
+    const file = {name:f.name, images:[], pdf:null, text:''};
+    if(f.type.startsWith('image/')) file.images = [await b64(await shrink(f))];
+    else if(f.type==='application/pdf' || /\.pdf$/i.test(f.name)){
+      file.images = await Promise.all((await pdfPages(f)).map(b64));
+    }
+    else if(/\.(xlsx|xls)$/i.test(f.name)){ const wb = XLSX.read(await f.arrayBuffer()); file.text = wb.SheetNames.map(s=>`# ${s}\n`+XLSX.utils.sheet_to_csv(wb.Sheets[s])).join('\n'); }
+    else file.text = await f.text();
+    S.file = file; renderAtt();
+  }catch(e){ S.file=null; renderAtt(); showErr('Не вдалося прочитати файл: '+e.message); }
+}
+function renderAtt(){
+  if(!S.file){ $('attRow').hidden=true; $('attRow').innerHTML=''; return; }
+  $('attRow').hidden=false; $('attRow').innerHTML=`<span class="chip">Файл: ${esc(S.file.name)}<button aria-label="Прибрати файл">✕</button></span>`;
+  $('attRow').querySelector('button').onclick = () => { S.file=null; renderAtt(); };
+}
+function showErr(m){ $('err').textContent=m; $('err').hidden=false; }
+function hideErr(){ $('err').hidden=true; }
+
+// ── MiniMax API (тест). Формат запитів — як у Claude, тому решта коду не змінюється ──
+function countUsage(i,o){ USAGE.in+=i||0; USAGE.out+=o||0; const usd = USAGE.in/1e6*0.15 + USAGE.out/1e6*0.60;
+  const el = document.getElementById('mmCost'); if(el) el.textContent = `MiniMax M3.1 Flash · за сесію: ${Math.round(USAGE.in/1000)}k вх / ${Math.round(USAGE.out/1000)}k вих токенів ≈ $${usd.toFixed(4)} (${(usd*S.usd).toFixed(2)} грн)`; }
+async function post(url, headers, body){
+  let res; try{ res = await fetch(url, {method:'POST', headers, body:JSON.stringify(body)}); }
+  catch(e){ throw new Error(provider()==='minimax' ? 'Браузер не зміг достукатись до api.minimax.io (ймовірно, MiniMax не дозволяє запити прямо з сайту). Спробуйте посилання з ключем OpenRouter (sk-or-…).' : 'Немає з\'єднання з OpenRouter.'); }
+  const data = await res.json().catch(() => ({}));
+  if(res.status === 401) throw new Error('Ключ не підходить або вимкнений.');
+  if(res.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
+  if(!res.ok) throw new Error(data?.error?.message || data?.base_resp?.status_msg || `помилка ${res.status}`);
+  return data;
+}
+async function claude(messages, extra = {}){
+  const tools = (extra.tools||[]).filter(t => !t.type);   // web_search працює лише в Claude — прибираємо
+  const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools;
+  if(provider() === 'minimax'){
+    const d = await post(MM.minimax.url, { 'content-type':'application/json', 'x-api-key':apiKey(), 'authorization':'Bearer '+apiKey(), 'anthropic-version':'2023-06-01' },
+      { model:MM.minimax.model, max_tokens:16000, messages, ...ex });
+    countUsage(d.usage?.input_tokens, d.usage?.output_tokens);
+    return d;
+  }
+  // OpenRouter: переклад Claude-формату ↔ OpenAI-формат
+  const oai = [];
+  for(const m of messages){
+    const parts = typeof m.content === 'string' ? [{type:'text', text:m.content}] : m.content;
+    if(m.role === 'assistant'){
+      const text = parts.filter(b=>b.type==='text').map(b=>b.text).join('');
+      const calls = parts.filter(b=>b.type==='tool_use').map(b=>({id:b.id, type:'function', function:{name:b.name, arguments:JSON.stringify(b.input||{})}}));
+      oai.push({role:'assistant', content:text||null, ...(calls.length?{tool_calls:calls}:{})}); continue;
+    }
+    const results = parts.filter(b=>b.type==='tool_result');
+    for(const r of results) oai.push({role:'tool', tool_call_id:r.tool_use_id, content:String(r.content)});
+    const rest = parts.filter(b=>b.type!=='tool_result').map(b => b.type==='image' ? {type:'image_url', image_url:{url:`data:${b.source.media_type};base64,${b.source.data}`}} : {type:'text', text:b.text});
+    if(rest.length) oai.push({role:'user', content:rest});
+  }
+  const body = { model:MM.openrouter.model, max_tokens:ex.max_tokens||16000, messages:oai };
+  if(tools.length) body.tools = tools.map(t=>({type:'function', function:{name:t.name, description:t.description, parameters:t.input_schema}}));
+  const d = await post(MM.openrouter.url, { 'content-type':'application/json', 'authorization':'Bearer '+apiKey(), 'HTTP-Referer':location.origin, 'X-Title':'Hotpoint.ai test' }, body);
+  countUsage(d.usage?.prompt_tokens, d.usage?.completion_tokens);
+  const msg = d.choices?.[0]?.message || {};
+  const content = [];
+  if(msg.content) content.push({type:'text', text:msg.content});
+  for(const c of msg.tool_calls||[]){ let input={}; try{ input = JSON.parse(c.function.arguments||'{}'); }catch{} content.push({type:'tool_use', id:c.id, name:c.function.name, input}); }
+  return { content, stop_reason: (msg.tool_calls||[]).length ? 'tool_use' : 'end_turn' };
+}
+const textOf = d => (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+function json(text){ const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<0) throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); return JSON.parse(text.slice(a,b+1)); }
+function fileBlocks(file){
+  const out = [];
+  if(file?.pdf) out.push({type:'document', source:{type:'base64', media_type:'application/pdf', data:file.pdf}});
+  for(const d of file?.images||[]) out.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d}});
+  return out;
+}
+
+const RULES = `Ти — Hotpoint.ai, помічник магазину сантехніки «Гаряча Точка» (Львів): сантехніка, опалення, водопостачання, електрика. Звертайся на «Ви», пиши українською, коротко і по суті.
+РЕГЛАМЕНТ МАЙСТРА: ввід води біля вхідних дверей; стояк каналізації Ø110; ГВ не вказано → двоконтурний газовий котел 24 кВт або бойлер 150 л + рециркуляція; техмісце — колекторна шафа; трійникова магістраль Ø25, відводи Ø20.
+Спальня/дитяча — без теплої підлоги, тільки радіатори тип 22 VK; засклена лоджія — ТП. Траси впритул до стіни; каналізація не під дверима.
+ХВ — PPR PN20 Ekoplastik; ГВ і опалення — PPR Fiber Basalt Ekoplastik; запас труби води ≥2.0x. Каналізація Ostendorf HT Safe Ø50 (3%), Ø110 (2%).
+ТП: PEX-A 16x2.0 RAFTEC, крок 150 мм (6.7 м/м²), контури <90 м; сума >200 м → змішувальний вузол SUR03 + насос.
+Водопідготовка: кран, фільтр грубої очистки, лічильник, зворотний клапан, редуктор з манометром, колба 10" + картридж 20 мкм.
+Рушникосушка водяна + кутові крани + ТЕН 0.6 кВт; дзеркало над кожною раковиною; інсталяція — у чорновій.
+Електрика: щит 36 мод., реле напруги, диф-автомати C16 30mA, ВВГнг-П 3х1,5 (світло) і 3х2,5 (розетки), клеми WAGO. Кріплення окремими рядками.
+Заборонені бренди: AlcaPlast, Imprese, Qtap, Lidz.`;
+const TASK = {
+  calc:'Це замовлення/список матеріалів (може бути рукопис, фото чи рахунок іншого постачальника). Розшифруй кожну позицію як є, нічого не додавай від себе, лише уточни розміри.',
+  project:'Це дизайн-проєкт або опис об\'єкта: спершу прийми системні рішення за регламентом, потім зроби повний розрахунок матеріалів (вода, каналізація, опалення, ТП, електрика, кріплення).',
+};
+
+// ── Чат ──
+function hist(){ const h = S.chat.filter(m=>(m.text||m.att)&&!m.typing).slice(-12).map(m=>({role:m.role==='me'?'user':'assistant', content:m.text||`Файл: ${m.att}`}));
+  while(h.length && h[0].role!=='user') h.shift();
+  const out = []; for(const m of h){ if(out.length && out[out.length-1].role===m.role) out[out.length-1].content += '\n\n'+m.content; else out.push({...m}); } return out; }
+function addMsg(m){ S.chat.push(m); render(); save(); return m; }
+
+async function send(){
+  if(S.busy) return; hideErr();
+  const text = $('txt').value.trim(), file = S.file;
+  if(!text && !file) return;
+  if(!apiKey()) return showErr('Немає доступу до помічника. Відкрийте сайт за посиланням, яке Вам дали (з ключем у кінці).');
+  if(S.mode!=='pick' && !S.cat.length){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
+  $('txt').value=''; grow(); S.file=null; renderAtt();
+  $('hero').hidden=true; $('cards').hidden=true;
+  addMsg({role:'me', text, att:file?.name});
+  S.busy=true; $('send').disabled=true;
+  const wait = addMsg({role:'ai', typing:'Думаю…'});
+  try{ if(S.mode==='pick') await pick(file, wait); else await calc(text, file, wait); }
+  catch(e){ wait.typing=null; wait.text='Щось пішло не так: '+(e.message||e); render(); save(); }
+  finally{ S.busy=false; $('send').disabled=false; }
+}
+$('send').onclick = send;
+
+async function calc(text, file, wait){
+  const t0 = Date.now(); const tick = setInterval(()=>{ wait.typing = `${wait.phase||'Читаю'} · ${Math.round((Date.now()-t0)/1000)} с`; renderTyping(wait); }, 700);
+  try{
+    wait.phase = file ? 'Читаю файл' : 'Розбираю список';
+    const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${text?`Повідомлення клієнта:\n${text}\n`:''}
+Поверни ТІЛЬКИ JSON:
+{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","checklist":[{"rule":"","passed":true,"comment":""}],
+"items":[{"need":"що потрібно, з розмірами","search":"3-6 ключових слів для пошуку в прайсі (тип, діаметр, бренд)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
+${S.mode==='calc'?'checklist лиши порожнім.':''}`;
+    const draft = json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
+    const needs = (draft.items||[]).slice(0,250);
+    if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
+    const byCode = new Map(S.cat.map(x=>[x[0],x])), picks = new Map();
+    const chunks = []; for(let i=0;i<needs.length;i+=40) chunks.push(i);
+    let done = 0; wait.phase = `Підбираю коди 0 з ${needs.length}`;
+    await Promise.all(chunks.map(async i => {
+      const chunk = needs.slice(i,i+40).map((n,j)=>({i:i+j, need:n.need, candidates:search(`${n.search||''} ${n.need||''}`,12).map(c=>`${c[0]} | ${c[1]} | ${c[2]} | ${c[3]}`)}));
+      const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С. Для кожної потреби обери код лише з її кандидатів, що точно відповідає (тип, діаметр, різьба, бренд). Нема точного — найближчий аналог з поміткою, або null. Пріоритет: Ekoplastik, Ostendorf, RAFTEC, Grohe, Schneider. Заборонені: AlcaPlast, Imprese, Qtap, Lidz.\n\n${JSON.stringify(chunk)}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000","note":"коротко, якщо аналог або не знайдено"}]} (code може бути null)`}], {max_tokens:8000})));
+      for(const p of (r.picks||[])) picks.set(p.i,p);
+      done += chunk.length; wait.phase = `Підбираю коди ${done} з ${needs.length}`;
+    }));
+    const items = needs.map((n,i)=>{ const p=picks.get(i)||{}; const it = p.code && byCode.get(String(p.code).padStart(11,'0'));
+      return { code: it?it[0]:'—', art: it?it[1]:'', name: it?it[2]:`НЕ ЗНАЙДЕНО: ${n.need}`, qty:Number(n.qty)||1, unit: it?it[3]:(n.unit||'шт'),
+        category: CATS.some(c=>c[0]===n.category)?n.category:'rough_plumbing', price: it?Math.round(uah(it)*100)/100:0, note:[n.note,p.note].filter(Boolean).join(' · ') }; });
+    const miss = items.filter(i=>i.code==='—').length;
+    wait.typing=null;
+    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length} позицій${miss?`, ${miss} не знайшов — вони підсвічені`:''}. Кількість можна змінити прямо в таблиці.`;
+    wait.res = { title: draft.title||'Специфікація', items, checklist: draft.checklist||[], tab:(CATS.find(c=>items.some(i=>i.category===c[0]))||CATS[0])[0] };
+    render(); save();
+  } finally { clearInterval(tick); }
+}
+
+async function pick(file, wait){
+  const tools = [{ name:'search_catalog', description:'Пошук товарів у прайсі «Гарячої Точки». Повертає до 15 позицій: код | артикул | назва | од. | ціна грн. Шукай короткими запитами: тип + характеристика + бренд.',
+    input_schema:{type:'object', properties:{query:{type:'string'}}, required:['query']} }, {type:'web_search_20250305', name:'web_search', max_uses:6}];
+  const msgs = hist();
+  msgs[0].content = `${RULES}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Коли зрозуміло — шукай у прайсі інструментом search_catalog (кілька запитів) і запропонуй 2-4 варіанти: назва, код, ціна, чому підходить. Пропонуй лише те, що знайшов у прайсі. Для кожного запропонованого товару знайди інструментом web_search сторінку цього товару на сайті виробника (за артикулом) і дай посилання, щоб клієнт міг подивитись фото й характеристики. Формат кожного пункту: код — назва — ціна — посилання. Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
+  const last = msgs[msgs.length-1];
+  last.content = [...fileBlocks(file), {type:'text', text: last.content + (file?.text?`\n\nВміст файлу ${file.name}:\n${file.text.slice(0,20000)}`:'')}];
+  const base = msgs.length;
+  for(let step=0; step<8; step++){
+    const d = await claude(msgs, {tools, max_tokens:6000});
+    msgs.push({role:'assistant', content:d.content});
+    if(d.stop_reason === 'pause_turn'){ wait.typing = 'Шукаю сторінки товарів…'; renderTyping(wait); continue; }
+    if(d.stop_reason !== 'tool_use'){ wait.typing=null; wait.text = msgs.slice(base).filter(m=>m.role==='assistant').map(m=>textOf(m)).join('') || textOf(d); render(); save(); return; }
+    const results = d.content.filter(b=>b.type==='tool_use').map(b => {
+      wait.typing = `Шукаю в прайсі: ${b.input.query}`; renderTyping(wait);
+      return {type:'tool_result', tool_use_id:b.id, content: search(String(b.input.query||''),15).map(c=>`${c[0]} | ${c[1]} | ${c[2]} | ${c[3]} | ${fmt(uah(c))} грн`).join('\n') || 'нічого не знайдено'};
+    });
+    msgs.push({role:'user', content:results});
+  }
+  wait.typing=null; wait.text='Не вдалося завершити підбір. Уточніть запит.'; render(); save();
+}
+
+function excel(r){
+  const wb = XLSX.utils.book_new();
+  for(const [c,l] of CATS){ const data = r.items.filter(i=>i.category===c).map((i,n)=>({'№':n+1,'Код':i.code,'Артикул':i.art,'Найменування':i.name,'К-сть':i.qty,'Од.':i.unit,'Ціна, грн':i.price,'Сума, грн':Math.round(i.price*i.qty*100)/100,'Примітка':i.note}));
+    if(!data.length) continue; const ws = XLSX.utils.json_to_sheet(data); ws['!cols']=[{wch:4},{wch:13},{wch:14},{wch:70},{wch:7},{wch:6},{wch:10},{wch:11},{wch:30}]; XLSX.utils.book_append_sheet(wb, ws, l); }
+  XLSX.writeFile(wb, `Гаряча Точка — ${r.title}.xlsx`.replace(/[\\/:*?"<>|]/g,' '));
+}
+
+// ── Приклади ──
+const EX = {
+  calc: { title:'Приклад: порахувати товар', meFiles:[{name:'Рахунок постачальника (фото)',info:'JPG · 26 позицій',url:'examples/rakhunok-postachalnyka.jpg',thumb:'examples/rakhunok-thumb.jpg'}], aiFiles:[{name:'Підбір «Гаряча Точка».xlsx',info:'Excel · 25 рядків з кодами 1С',url:'examples/pidbir-hotpoint.xlsx',dl:true}], me:'Фото рахунку від іншого постачальника (26 позицій). Підбери те саме з нашого прайсу.',
+    ai:'Підібрав рахунок з прайсу «Гарячої Точки» (25 рядків): Ekoplastik — ідентичні артикули, сталеві фітинги й крани — найближчі аналоги. Кількість як у рахунку.',
+    rows:[["00000024722", "STRFB050TRCT", "Труба PPR Fiber Basalt ф 50х6,9 мм, PN20, PP-RCT, Ekoplastik {4/16}", 144, "м"], ["00000043018", "STKR05025RCT", "Трійник редукційний PPR, ф 50х25х50, PP-RCT, Ekoplastik {5/25}", 32, "шт"], ["00000042982", "SNA050RCTX", "Муфта PPR ф 50, PP-RCT, Ekoplastik {10/70}", 20, "шт"], ["00000043002", "SRE15025RCT", "Муфта перехідна PPR ЗВ, ф 50х25, PP-RCT, Ekoplastik {10/60}", 4, "шт"], ["00000042939", "SKO05090RCT", "Коліно PPR 90°, ф 50, PP-RCT, Ekoplastik {10/30}", 12, "шт"], ["00000043030", "STRFB025TRCT", "Труба PPR Fiber Basalt ф 25х3,5 мм, PN20, PP-RCT, Ekoplastik {4/60}", 60, "м"], ["00000000928", "STK025RCTX", "Трійник рівний PPR, ф 25, PP-RCT, Ekoplastik {20/100}", 4, "шт"], ["00000000651", "SNA025RCTX", "Муфта PPR ф 25, PP-RCT, Ekoplastik {20/220}", 4, "шт"], ["00000042976", "SZE02520XX", "Муфта PPR МРЗ, ф 25х1/2\", PP-RCT, Ekoplastik {10/100}", 40, "шт"], ["00000000564", "SKO02590RCT", "Коліно PPR 90°, ф 25, PP-RCT, Ekoplastik {20/140}", 40, "шт"], ["00000038100", "015G5301", "Комплект тройной RAS-C+RA-FN+RLV-S 1/2\" угловой  Danfoss (новий арт. 015G5301. 16)", 19, "шт"], ["00000091493", "303012", "303012 Автоматичний розповітрювач Tervix Pro Line з відсічним клапаном 1/2\"", 2, "шт"], ["00000043011", "STKI02520X", "Трійник PPR РВ, ф 25х1/2\", PP-RCT, Ekoplastik {10/80}", 2, "шт"], ["00000066494", "105246", "105246 Манометр ДМ 05-МП-3У 100 - 1,6 МПа - 1,5 G1/2 ТУ У 33.2-14307481-031:2005", 2, "шт"], ["00000051946", "", "102970 Термометр ТБ-63-50 (0+120-2,5-Р)", 2, "шт"], ["00000003778", "", "Різьба приварна, сталь, РЗ, DN50, ф 50 х 3,5 мм, 2\" {5/100}", 4, "шт"], ["00000003775", "", "Різьба приварна, сталь, РЗ, DN25, ф 25 х 2,8 мм, 1\" {10/300}", 6, "шт"], ["00000016546", "150048", "Трійник сталевий, 57х3", 2, "шт"], ["00000009328", "", "Перехід конусний приварний, сталь, DN50х20, ф 57х27 мм {20/200}", 2, "шт"], ["00000003773", "", "Різьба приварна, сталь, РЗ, DN15, ф 15 х 2,5 мм, 1/2\" {10/500}", 2, "шт"], ["00000093774", "DRBS6", "Кран кульовий з амер. ВЗ, DN50, 2'', PN25, DRBS6, ручка, RAFTEC BLACK {2/8}", 4, "шт"], ["00000042971", "SZI05050XX", "Муфта PPR МРВ, ф 50х1 1/2\", під ключ PP-RCT, Ekoplastik {4}", 4, "шт"], ["00000098450", "GRDV031", "Кран кульовий ВВ, DN25, 1\", PN50,  GRDV031, CW617N, метелик, RAFTEC GOLD {15/60}", 6, "шт"], ["00000081152", "6393", "Перехід сталевий, 108х89 (100х80)", 2, "шт"], ["00000125664", "34724", "Відвід сталевий 90° Дн 89х3,5 безшовний", 8, "шт"]] },
+  project: { title:'Приклад: проєкт інженерних мереж', meFiles:[{name:'Дизайн квартири.pdf',info:'PDF · 56 сторінок · 8 МБ',url:'examples/dyzain-kvartyry.pdf',thumb:'examples/dyzain-thumb.jpg'}], aiFiles:[{name:'Проєкт мереж 87,7 м².pdf',info:'PDF · 14 аркушів: вода, каналізація, опалення, електрика, специфікація',url:'examples/proekt-merezh-87m2.pdf',thumb:'examples/proekt-thumb.jpg'}], me:'Квартира в новобудові, Львів, 87,7 м². Котел на кухні.',
+    ai:'Системні рішення:\n• Ввід води біля вхідних дверей: кран, фільтр, лічильник, редуктор, колба 20 мкм\n• Стояк каналізації Ø110 у санвузлі\n• Газовий двоконтурний котел 24 кВт на кухні\n• Техвузол у гардеробній: колекторна шафа, змішувальний вузол SUR03 + насос\n• Спальня і дитяча — радіатори IDMAR 22, без теплої підлоги\n\nМетраж: ХВ 56 м · ГВ 40 м · каналізація 22,4 м · тепла підлога 400 м (6 контурів, крок 150) · кабель 3х1,5 — 210 м, 3х2,5 — 240 м.\n\nPDF-альбом мереж (14 аркушів: плани води, каналізації, опалення, електрики) і специфікація: 159 позицій у трьох розділах — чорнова сантехніка, чистова, електрика. Перевірка за правилами майстра: 17 з 17.',
+    rows:[['00000057229','RPXA16200-S','Труба PEX-A, ф 16x2,0 мм, RED, EVOH, RAFTEC',400,'м'],['00000055875','SUR03','Змішувальний вузол 1", SUR03, RAFTEC',1,'шт'],['00000113267','V22500X100','Радіатор сталевий, тип 22, 500x1000, VK, IDMAR',1,'шт'],['00000117071','EZ9EUB312','Щит вбудований 36 мод. Easy9 Schneider',1,'шт']] },
+  pick: { title:'Приклад: підібрати товар', me:'Я хочу підібрати автоматику Danfoss для теплої підлоги: гребінка FHF латунь на 6 контурів, 6 сервоприводів, 4 білі терморегулятори і керуючий блок.',
+    ai:'Під гребінку FHF підходить 10 сумісних комплектів. Коротко:\n\n**Icon2 (сучасна, керування зі смартфона через шлюз Ally)**\n1. Дротові накладні — контролер 088U2100, термостат 088U2128, приводи 088H3112 — ≈57 371 грн\n2. Дротові вбудовані — 088U2125 — ≈54 682 грн\n3. Бездротові — 088U2121 — ≈57 925 грн\n4. Бездротові з ІЧ-датчиком — 088U2122 — ≈69 863 грн\n\n**Icon 230 В (бюджетно)**\n8. Dial — контролер 088U1040, термостат 088U1005 — ≈33 122 грн\n9. Display — 088U1015 — ≈48 101 грн\n\nВажливо: на FHF ставляться лише приводи TWA-A (не TWA-K); термостати Icon2 працюють тільки з контролерами Icon2; термостати випускаються лише білими.\n\nСторінки товарів у виробника:\n• 088U2100 Icon2 MC Basic — https://store.danfoss.com/en/p/088U2100\n• 088U2128 Icon2 RT 24V накладний — https://store.danfoss.com/en/p/088U2128\n• 088U2121 Icon2 RT бездротовий — https://store.danfoss.com/en/p/088U2121\n• 088H3112 TWA-A NC 230V — https://store.danfoss.com/en/p/088H3112\n• 088U0526 Колектор FHF 6+6 з витратомірами — https://store.danfoss.com/en/p/088U0526\n\nЯкий варіант Вам ближче: дротовий чи бездротовий? Тоді складу замовлення з кодами для бази.',
+    aiFiles:[{name:'Автоматика Danfoss ТП.pdf',info:'PDF · 9 сторінок: 10 варіантів, склад з кодами, правила сумісності',url:'examples/danfoss-avtomatyka-tp.pdf',thumb:'examples/danfoss-thumb.jpg'}] },
+};
+let exMode = null;
+document.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => {
+  const e = EX[exMode = b.dataset.ex]; $('exTitle').textContent = e.title;
+  const pics = a => (a||[]).map(u=>`<img src="${u}" alt="" style="max-width:100%;border-radius:10px;border:1px solid var(--line);display:block">`).join('');
+  const files = a => (a||[]).length ? `<div class="files">${a.map(f=>`<a class="fcard" href="${f.url}" target="_blank" rel="noopener"${f.dl?' download':''}>${f.thumb?`<img src="${f.thumb}" alt="">`:`<span class="fic">XLSX</span>`}<span class="ft"><b>${esc(f.name)}</b><span>${esc(f.info)}</span><u>${f.dl?'Завантажити':'Відкрити'}</u></span></a>`).join('')}</div>` : '';
+  const tbl = e.rows ? `<div class="res"><div class="tbox"><table style="min-width:520px"><thead><tr><th>Код</th><th>Артикул</th><th>Найменування</th><th>К-сть</th><th>Од.</th></tr></thead><tbody>${e.rows.map(r=>`<tr><td class="code">${r[0]}</td><td class="art">${esc(r[1])}</td><td>${esc(r[2])}</td><td class="num">${r[3]}</td><td class="small">${r[4]}</td></tr>`).join('')}</tbody></table></div>${exMode==='project'?'<div class="small">…і ще 155 позицій</div>':''}</div>` : '';
+  $('exBody').innerHTML = `<div class="msg me">${files(e.meFiles)}<div class="bub">${esc(e.me)}</div></div><div class="msg ai"><div class="who">Hotpoint.ai</div><div class="bub">${fmtText(e.ai)}</div>${files(e.aiFiles)}${tbl}</div>`;
+  $('exSheet').hidden = false;
+});
+$('exClose').onclick = () => $('exSheet').hidden = true;
+$('exSheet').onclick = e => { if(e.target === $('exSheet')) $('exSheet').hidden = true; };
+$('exTry').onclick = () => { $('exSheet').hidden = true; document.querySelector(`[data-start="${exMode}"]`).click(); };
+
+// ── Відмальовка ──
+function render(){
+  const box = $('msgs'); box.querySelectorAll('.msg').forEach(n=>n.remove());
+  const seen = S._seen || 0;
+  S.chat.forEach((m,idx) => { const el = msgEl(m,idx); if(idx >= seen) el.classList.add('enter'); box.appendChild(el); });
+  S._seen = S.chat.length;
+  document.body.classList.toggle('emptyChat', !S.chat.length);
+  $('feed').scrollTop = $('feed').scrollHeight;
+}
+function msgEl(m, idx){
+  const d = document.createElement('div'); d.className = 'msg ' + (m.role==='me'?'me':'ai'); d.dataset.i = idx;
+  if(m.role==='me'){ d.innerHTML = (m.att?`<div class="att">Файл: ${esc(m.att)}</div>`:'') + (m.text?`<div class="bub">${esc(m.text)}</div>`:''); return d; }
+  d.innerHTML = `<div class="who">Hotpoint.ai</div>` + (m.typing ? `<div class="think"><div class="core"><i></i><i></i><i></i><b></b><b></b><b></b></div><div class="tbody"><span class="tt">${esc(m.typing)}</span><div class="bars"><span></span><span></span><span></span><span></span></div><div class="tip"><small>Порада майстру</small><span class="tipT"></span><span class="cur"></span></div></div></div>` : `<div class="bub">${fmtText(m.text||'')}</div>`);
+  if(m.res) d.appendChild(resEl(m));
+  return d;
+}
+const fmtText = s => esc(s).replace(/(https?:\/\/[^\s<]+[^\s<.,;:)!?])/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|\n)#+\s*(.+)/g,'$1<b>$2</b>');
+function renderTyping(m){ const el = $('msgs').querySelector(`.msg[data-i="${S.chat.indexOf(m)}"] .tt`); if(el) el.textContent = m.typing; else render(); }
+function renderStream(m){ const el = $('msgs').querySelector(`.msg[data-i="${S.chat.indexOf(m)}"]`); if(!el) return render(); el.replaceWith(msgEl(m, S.chat.indexOf(m))); $('feed').scrollTop = $('feed').scrollHeight; }
+function resEl(m){
+  const r = m.res, el = document.createElement('div'); el.className = 'res';
+  const rows = r.items.filter(i=>i.category===r.tab), found = rows.filter(i=>i.code!=='—');
+  const total = r.items.reduce((a,i)=>a+i.price*i.qty,0);
+  el.innerHTML = `<div class="row between"><h4>${esc(r.title)}</h4><span class="small">Разом: <span class="sum">${fmt(total)} грн</span> · ціни на 05.07.2026</span></div>
+    <div class="row tabs"></div>
+    <div class="tbox"><table class="spec"><thead><tr><th>№</th><th>Код</th><th>Артикул</th><th>Найменування</th><th>К-сть</th><th>Од.</th><th style="text-align:right">Ціна</th><th style="text-align:right">Сума</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="row"><button class="btn" data-c="t2">Код + к-сть (1С)</button><button data-c="t1">Назва + к-сть</button><button data-c="t3">Вся таблиця</button><button data-x>Excel</button><span class="small">Розділ: <span class="sum">${fmt(rows.reduce((a,i)=>a+i.price*i.qty,0))} грн</span></span></div>`;
+  for(const [c,l] of CATS){ const n = r.items.filter(i=>i.category===c).length; if(!n) continue;
+    const b=document.createElement('button'); b.className = r.tab===c?'on':''; b.textContent = `${l} · ${n}`; b.onclick=()=>{ r.tab=c; save(); el.replaceWith(resEl(m)); }; el.querySelector('.tabs').appendChild(b); }
+  const tb = el.querySelector('tbody');
+  rows.forEach((it,k) => {
+    const tr = document.createElement('tr'); if(it.code==='—') tr.className='miss';
+    tr.innerHTML = `<td class="small">${k+1}</td><td class="code">${esc(it.code)}</td><td class="art">${esc(it.art||'—')}</td><td><div class="nm">${esc(it.name)}</div>${it.note?`<div class="note">${esc(it.note)}</div>`:''}</td><td><input type="number" min="0" step="any" value="${it.qty}" aria-label="Кількість"></td><td class="small">${esc(it.unit)}</td><td class="num">${it.price?fmt(it.price):'—'}</td><td class="num">${it.price?fmt(it.price*it.qty):'—'}</td><td><button class="x" aria-label="Видалити">✕</button></td>`;
+    tr.querySelector('input').onchange = e => { it.qty = Number(e.target.value)||0; save(); el.replaceWith(resEl(m)); };
+    tr.querySelector('.x').onclick = () => { r.items.splice(r.items.indexOf(it),1); save(); el.replaceWith(resEl(m)); };
+    tb.appendChild(tr);
+  });
+  if(r.checklist?.length){ const det = document.createElement('details');
+    det.innerHTML = `<summary>Перевірка за правилами майстра: ${r.checklist.filter(c=>c.passed).length} з ${r.checklist.length}</summary>` +
+      r.checklist.map(c=>`<div class="rule"><span class="${c.passed?'ok':'bad'}">${c.passed?'✓':'!'}</span><div><b>${esc(c.rule)}</b><div class="note">${esc(c.comment)}</div></div></div>`).join('');
+    el.appendChild(det); }
+  el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
+    if(!found.length) return; const k = b.dataset.c;
+    const text = found.map(i => k==='t1'?`${i.name}\t${i.qty}`: k==='t2'?`${i.code}\t\t\t${i.qty}`:`${i.code}\t${i.art}\t${i.name}\t${i.qty}`).join('\n');
+    const old = b.textContent;
+    navigator.clipboard.writeText(text).then(()=>{ b.textContent='Скопійовано ✓'; setTimeout(()=>b.textContent=old,1800); }).catch(()=>showErr('Браузер не дав скопіювати. Виділіть рядки в таблиці вручну.'));
+  });
+  el.querySelector('[data-x]').onclick = () => excel(r);
+  return el;
+}
+
+
+// ── Поради з монтажу, що друкуються під час роздумів ──
+const TIPS = [
+  'Каналізацію Ø50 прокладайте з ухилом 2–3 см на метр, Ø110 — 1–2 см. Без ухилу буде застій і запах.',
+  'Для гарячої води й опалення беріть армовану PPR-трубу (Fiber Basalt) — вона значно менше подовжується від нагріву.',
+  'Перед редуктором тиску ставте фільтр грубої очистки — так редуктор прослужить у рази довше.',
+  'Тепла підлога з кроком 150 мм — це приблизно 6,7 м труби на 1 м² площі.',
+  'Один контур теплої підлоги робіть до 80–90 м, а довжини контурів — приблизно однаковими.',
+  'Контур теплої підлоги в стяжці — лише цілим відрізком, без жодних з’єднань.',
+  'Колекторну шафу підбирайте на 100 мм ширшу за колектор зі змішувальним вузлом.',
+  'У спальні та дитячій замість теплої підлоги ставлять радіатори — так комфортніше спати.',
+  'Перед закриттям штроб систему перевіряють тиском у 1,5 раза вищим за робочий.',
+  'Ревізію на стояку каналізації залишайте з доступом — люк або знімна панель.',
+  'Траси води ведіть уздовж стін, 30–50 мм від них, а не через центр кімнати — так безпечніше свердлити.',
+  'Під кожною раковиною ставте кутові крани — заміна змішувача не вимагатиме перекривати всю квартиру.',
+  'Каналізацію не проводять під внутрішніми дверима — ухил і поріг потім не зійдуться.',
+  'Водяну рушникосушку ставлять з кранами і байпасом, а ТЕН дає змогу сушити влітку без опалення.',
+  'Запас труби води закладайте щонайменше вдвічі від довжини траси на плані — підйоми й обходи з’їдають метри.',
+];
+const TIP = { i: Math.floor(Math.random()*TIPS.length), pos: 0, hold: 0 };
+setInterval(() => {
+  const els = document.querySelectorAll('.tipT'); if(!els.length) return;
+  const t = TIPS[TIP.i];
+  if(TIP.pos < t.length) TIP.pos += 1;
+  else if(++TIP.hold > 70){ TIP.i = (TIP.i + 1) % TIPS.length; TIP.pos = 0; TIP.hold = 0; }
+  els.forEach(el => el.textContent = TIPS[TIP.i].slice(0, TIP.pos));
+}, 32);
+
+// ── Пам’ять чатів ──
+const Chats = {
+  list(){ return ls.get('chats') || []; },
+  put(list){ ls.set('chats', list.slice(0, 60)); },
+};
+function chatTitle(){ const m = S.chat.find(x => x.role==='me'); return ((m?.text || m?.att || 'Новий чат').replace(/\s+/g,' ').slice(0, 48)); }
+function save(){
+  if(!S.chat.length) return;
+  const clean = S.chat.filter(m => !m.typing).slice(-40);
+  if(!S.cid) S.cid = 'c' + Date.now().toString(36);
+  const list = Chats.list().filter(c => c.id !== S.cid);
+  list.unshift({ id:S.cid, title:chatTitle(), mode:S.mode, updated:Date.now(), msgs:clean });
+  Chats.put(list);
+}
+function newChat(){ if(S.busy) return; S.chat = []; S.cid = null; S._seen = 0; $('hero').hidden = false; $('cards').hidden = false; render(); closeSide(); $('txt').focus(); }
+function openChat(id){
+  if(S.busy) return; const c = Chats.list().find(x => x.id === id); if(!c) return;
+  S.cid = c.id; S.chat = c.msgs || []; S._seen = 0; if(c.mode) setMode(c.mode);
+  $('hero').hidden = true; $('cards').hidden = true; render(); closeSide();
+}
+function renderSide(){
+  const list = Chats.list(), box = $('chatList'); box.innerHTML = '';
+  if(!list.length){ box.innerHTML = '<div class="small">Тут з’являться Ваші чати.</div>'; return; }
+  for(const c of list){
+    const d = document.createElement('div'); d.className = 'citem' + (c.id===S.cid ? ' on' : '');
+    d.innerHTML = `<div class="ct"><b>${esc(c.title)}</b><span>${new Date(c.updated).toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></div><button class="x" aria-label="Видалити чат">✕</button>`;
+    d.onclick = () => openChat(c.id);
+    d.querySelector('.x').onclick = ev => { ev.stopPropagation(); Chats.put(Chats.list().filter(x => x.id !== c.id)); if(S.cid===c.id) newChat(); renderSide(); };
+    box.appendChild(d);
+  }
+}
+function openSide(){ renderSide(); $('side').hidden = false; }
+function closeSide(){ $('side').hidden = true; }
+$('sideBtn').onclick = openSide; $('sideClose').onclick = closeSide; $('sideNew').onclick = newChat; $('newBtn').onclick = newChat;
+$('side').onclick = e => { if(e.target === $('side')) closeSide(); };
+
+
+
+// ── Плитки: натиснув — пояснення з кнопками «Почати» і «Приклад» ──
+const PH = { calc:'Список, фото або файл…', project:'Опишіть об’єкт або додайте PDF…', pick:'Що шукаєте?' };
+const _setMode = setMode; setMode = m => { _setMode(m); $('txt').placeholder = PH[m] || 'Напишіть повідомлення…'; };
+document.querySelectorAll('[data-tile]').forEach(b => b.onclick = () => {
+  const k = b.dataset.tile; document.querySelectorAll('.tpanel').forEach(p => p.hidden = p.dataset.panel !== k); $('tileSheet').hidden = false;
+});
+$('tileSheet').addEventListener('click', e => { if(e.target === $('tileSheet') || e.target.closest('[data-start],[data-ex]')) $('tileSheet').hidden = true; });
+
+// ── Презентація і перехід до роботи ──
+function startWork(){ document.body.classList.remove('introMode'); render(); }
+$('introStart').onclick = () => { startWork(); $('txt').focus(); };
+$('startBtn').onclick = () => { if(document.body.classList.contains('introMode')) startWork(); else newChat(); };
+$('capsBtn').onclick = () => {
+  startWork(); if(S.chat.length) newChat();
+  $('hero').hidden = false; $('cards').hidden = false; $('feed').scrollTop = 0;
+  const c = $('cards'); c.classList.remove('callout'); void c.offsetWidth; c.classList.add('callout'); setTimeout(() => c.classList.remove('callout'), 3200);
+};
+
+
+// ── Свайпи: з лівого краю — «Мої чати», вліво — закрити, вниз — закрити вікно ──
+(function(){
+  let x0=null, y0=null, t0=0, inner=null;
+  document.addEventListener('touchstart', e => { const t=e.touches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); const sh=e.target.closest('.sheet>div'); inner = sh ? sh.scrollTop : null; }, {passive:true});
+  document.addEventListener('touchend', e => {
+    if(x0===null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0, fast=Date.now()-t0<650;
+    if(fast && Math.abs(dx)>70 && Math.abs(dy)<60){
+      if(dx>0 && x0<36 && $('side').hidden && !document.querySelector('.sheet:not([hidden])')) openSide();
+      else if(dx<0 && !$('side').hidden) closeSide();
+    } else if(fast && dy>90 && Math.abs(dx)<70 && inner!==null && inner<=0){
+      const open=[...document.querySelectorAll('.sheet:not([hidden])')].pop(); if(open) open.hidden=true;
+    }
+    x0=null;
+  }, {passive:true});
+})();
+
+// ── Старт ──
+(function(){
+  document.body.classList.add('introMode'); setMode(S.mode);
+  const old = (ls.get('chat')||[]).filter(m=>!m.typing); if(old.length){ S.chat = old; save(); S.chat = []; S.cid = null; try{ localStorage.removeItem('chat'); }catch{} }
+  loadRates(); S.catPromise = loadCatalog();
+  if(!apiKey()) showErr('Відкрийте сайт за посиланням, яке Вам дали (з ключем у кінці), щоб помічник запрацював.');
+})();
+
+</script>
+</body>
+</html>
