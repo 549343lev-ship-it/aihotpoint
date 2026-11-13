@@ -600,7 +600,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-13.5';
+const APP_VER = '2026-11-13.6';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -1709,12 +1709,22 @@ function ruleMatch(need){
 const _pinsFor = pinsFor;
 pinsFor = function(need){ const r = ruleMatch(need), it = r && (pinsFor.by || new Map(S.cat.map(x => [x[0], x]))).get(String(r.code).padStart(11,'0'));
   return [...(it ? [it] : []), ..._pinsFor(need)]; };
+// Розділ (чорнова / чистова / електрика) — кодом за групою прайсу, а не «на око» моделі: радіатор, вставка, термоголовка — завжди чорнова
+const CAT_BY_GROUP = { 'Електрика':'rough_electrical', 'САНФАЯНС':'finish_plumbing', 'ЗМІШУВАЧІ':'finish_plumbing', 'СИФОНИ ТА АРМАТУРА':'finish_plumbing', 'РУШНИКОСУШКИ':'finish_plumbing' };
+function catOf(code, cur){
+  const c = (catOf.by && catOf.n === S.cat.length ? catOf.by : (catOf.n = S.cat.length, catOf.by = new Map(S.cat.map(x => [x[0], x])))).get(code);
+  if(!c) return cur || 'rough_plumbing';
+  if(/інсталяц|монтажн\S* (рам|модул)|трап|лоток|прихован\S* частин|ibox|rapido/i.test(c[2])) return 'rough_plumbing';
+  return CAT_BY_GROUP[c[6]] || 'rough_plumbing';
+}
 function hpAfterPick(items, needs, r1){
   items.forEach((it, i) => { if(i >= needs.length) return; it.need = needs[i].need || ''; it.alts = (r1?.[i]?.cands || []).slice(0, 10).map(c => c[0]);
     const r = ruleMatch(it.need); if(!r || r.sc < 0.8) return;
     const c = S.cat.find(x => x[0] === String(r.code).padStart(11,'0')); if(!c || c[0] === it.code) return;
     Object.assign(it, { code:c[0], art:c[1], name:c[2], unit:c[3], price:Math.round(uah(c)*100)/100, match:'exact', note:[it.note, 'заміна клієнта (запам’ятована)'].filter(Boolean).join(' · ') }); });
 }
+const _hpAfterPick = hpAfterPick;
+hpAfterPick = function(items, needs, r1){ _hpAfterPick(items, needs, r1); for(const it of items) if(it.code && it.code !== '—') it.category = catOf(it.code, it.category); };
 const hpPrefs = () => S.ctx.client?.prefs ? `ВПОДОБАННЯ КЛІЄНТА ${S.ctx.client.name}: ${S.ctx.client.prefs}` : '';
 
 // ── Збереження розрахунку в об’єкт ──
@@ -1798,7 +1808,7 @@ function swapPanel(tr, it, m, done, adding){
     const all = [...(q ? [] : alts), ...res].filter(c => !seen.has(c[0]) && seen.add(c[0]));
     list.innerHTML = (!q && alts.length ? '<div class="small">Альтернативи з підбору:</div>' : '') + (all.length ? all.map(opt).join('') : '<div class="small">Напишіть, що шукаєте.</div>');
     list.querySelectorAll('.opt').forEach(b => b.onclick = async () => { const c = byCode.get(b.dataset.code); const from = it.code;
-      Object.assign(it, { code:c[0], art:c[1], name:c[2], unit:c[3], price:Math.round(uah(c)*100)/100, match:'exact', note: adding ? 'додано вручну' : 'замінено менеджером' });
+      Object.assign(it, { code:c[0], art:c[1], name:c[2], unit:c[3], price:Math.round(uah(c)*100)/100, match:'exact', note: adding ? 'додано вручну' : 'замінено менеджером' }); it.category = catOf(c[0], it.category);
       if(isClient()) it.note = adding ? 'додано клієнтом' : 'замінено клієнтом';
       const rem = row.querySelector('[data-rule]')?.checked;
       if(rem){ try{ const r = await API('rule_add', { client_id:S.ctx.client.id, need:it.need || it.name, from, code:c[0], name:c[2] }); S.ctx.rules = r.rules; it.note += ' · запам’ятано для клієнта'; }catch(e){ showErr(e.message); } }
