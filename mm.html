@@ -569,6 +569,16 @@ const MM = { minimax:{ url:'https://api.minimax.io/anthropic/v1/messages', model
              openrouter:{ url:'https://openrouter.ai/api/v1/chat/completions', model:'minimax/minimax-m3.1-flash' } };
 const provider = () => /^sk-or-/.test(apiKey()||'') ? 'openrouter' : 'minimax';
 const USAGE = { in:0, out:0 };
+// Поле для ключа MiniMax прямо на сторінці (щоб не вставляти в посилання)
+function mmKeyBox(){
+  const bar = document.getElementById('mmCost'); if(!bar) return;
+  if(apiKey()){ bar.innerHTML = 'Тест: MiniMax M3.1 Flash · ключ збережено <a href="#" id="mmReset" style="color:#664d03">змінити</a>';
+    document.getElementById('mmReset').onclick = e => { e.preventDefault(); try{localStorage.removeItem('hpkey_mm')}catch{} mmKeyBox(); }; return; }
+  bar.style.pointerEvents='auto'; bar.style.whiteSpace='normal';
+  bar.innerHTML = 'Тест MiniMax M3.1 Flash: вставте API-ключ <input id="mmKey" type="password" placeholder="ключ з platform.minimax.io" style="font:inherit;padding:2px 6px;border:1px solid #ffe69c;border-radius:6px;width:220px;max-width:50vw"> <button id="mmSave" style="font:inherit;padding:2px 10px;border-radius:6px;border:0;background:#c2410c;color:#fff;cursor:pointer">Зберегти</button>';
+  document.getElementById('mmSave').onclick = () => { const v = document.getElementById('mmKey').value.trim(); if(!v) return; ls.set('hpkey_mm', v); mmKeyBox(); hideErr(); };
+}
+document.addEventListener('DOMContentLoaded', mmKeyBox); setTimeout(mmKeyBox, 0);
 const CATS = [['rough_plumbing','Чорнова'],['finish_plumbing','Чистова'],['rough_electrical','Електрика']];
 const STARTERS = { calc:'Я хочу порахувати товар. Ось мій список: ', project:'Я хочу зробити проєкт інженерних мереж за дизайн-проєктом. Квартира ', pick:'Я хочу підібрати ' };
 // Прайси «Гарячої Точки» у Google Таблицях (папка ПРАЙСИ). Доступ: «усі, хто має посилання — читач».
@@ -757,7 +767,7 @@ async function send(){
   if(S.busy) return; hideErr();
   const text = $('txt').value.trim(), file = S.file;
   if(!text && !file) return;
-  if(!apiKey()) return showErr('Немає доступу до помічника. Відкрийте сайт за посиланням, яке Вам дали (з ключем у кінці).');
+  if(!apiKey()) return showErr('Вставте ключ MiniMax у жовте поле внизу сторінки і натисніть «Зберегти».');
   if(S.mode!=='pick' && !S.cat.length){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
   $('txt').value=''; grow(); S.file=null; renderAtt();
   $('hero').hidden=true; $('cards').hidden=true;
@@ -1013,7 +1023,7 @@ $('capsBtn').onclick = () => {
   document.body.classList.add('introMode'); setMode(S.mode);
   const old = (ls.get('chat')||[]).filter(m=>!m.typing); if(old.length){ S.chat = old; save(); S.chat = []; S.cid = null; try{ localStorage.removeItem('chat'); }catch{} }
   loadRates(); S.catPromise = loadCatalog();
-  if(!apiKey()) showErr('Відкрийте сайт за посиланням, яке Вам дали (з ключем у кінці), щоб помічник запрацював.');
+  if(!apiKey()) showErr('Вставте ключ MiniMax у жовте поле внизу сторінки і натисніть «Зберегти».');
 })();
 
 </script>
