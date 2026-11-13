@@ -741,17 +741,6 @@ async function post(url, headers, body){
 async function claude(messages, extra = {}){
   const tools = (extra.tools||[]).filter(t => !t.type);   // web_search працює лише в Claude — прибираємо
   const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools;
-  if(provider() === 'proxy'){
-    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), body:{ model:MM.minimax.model, max_tokens:16000, messages, ...ex }})}); }
-    catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
-    const w = await res.json().catch(() => ({})); const d = w.data || {};
-    if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
-    if(w.status === 403){ mmGate('closed'); throw new Error('Доступ закрито. Зверніться до адміністратора.'); }
-    if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
-    if(!w.status || w.status >= 400 || d.type === 'error') throw new Error(d?.error?.message || d?.base_resp?.status_msg || 'Відповідь задовга або перервалась (ліміт проксі 60 с). Спробуйте менший список.');
-    countUsage(d.usage?.input_tokens, d.usage?.output_tokens);
-    return d;
-  }
   if(provider() === 'minimax'){
     const d = await post(MM.minimax.url, { 'content-type':'application/json', 'x-api-key':apiKey(), 'authorization':'Bearer '+apiKey(), 'anthropic-version':'2023-06-01' },
       { model:MM.minimax.model, max_tokens:16000, messages, ...ex });
@@ -772,18 +761,40 @@ async function claude(messages, extra = {}){
     const rest = parts.filter(b=>b.type!=='tool_result').map(b => b.type==='image' ? {type:'image_url', image_url:{url:`data:${b.source.media_type};base64,${b.source.data}`}} : {type:'text', text:b.text});
     if(rest.length) oai.push({role:'user', content:rest});
   }
-  const body = { model:MM.openrouter.model, max_tokens:ex.max_tokens||16000, messages:oai };
+  const viaProxy = provider() === 'proxy';
+  // reasoning_effort 'low': M3.1 Flash за замовчуванням думає на 'max' і з'їдає весь ліміт токенів
+  const body = { model: viaProxy ? MM.minimax.model : MM.openrouter.model, max_tokens:Math.max(ex.max_tokens||16000, 16000), reasoning_effort:'low', messages:oai };
   if(tools.length) body.tools = tools.map(t=>({type:'function', function:{name:t.name, description:t.description, parameters:t.input_schema}}));
-  const d = await post(MM.openrouter.url, { 'content-type':'application/json', 'authorization':'Bearer '+apiKey(), 'HTTP-Referer':location.origin, 'X-Title':'Hotpoint.ai test' }, body);
+  let d;
+  if(viaProxy){
+    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), format:'openai', body})}); }
+    catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
+    const w = await res.json().catch(() => ({})); d = w.data || {};
+    if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
+    if(w.status === 403){ mmGate('closed'); throw new Error('Доступ закрито. Зверніться до адміністратора.'); }
+    if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
+    if(!w.status || w.status >= 400 || d.base_resp?.status_code) throw new Error(d?.error?.message || d?.base_resp?.status_msg || 'Відповідь задовга або перервалась (ліміт проксі 60 с). Спробуйте менший список.');
+  } else {
+    d = await post(MM.openrouter.url, { 'content-type':'application/json', 'authorization':'Bearer '+apiKey(), 'HTTP-Referer':location.origin, 'X-Title':'Hotpoint.ai test' }, body);
+  }
   countUsage(d.usage?.prompt_tokens, d.usage?.completion_tokens);
-  const msg = d.choices?.[0]?.message || {};
+  const ch = d.choices?.[0] || {}, msg = ch.message || {};
+  if(ch.finish_reason === 'length' && !msg.tool_calls) console.warn('MiniMax: відповідь обрізана по ліміту токенів');
   const content = [];
-  if(msg.content) content.push({type:'text', text:msg.content});
+  const clean = String(msg.content||'').replace(/<think>[\s\S]*?<\/think>/g,'').trim();
+  if(clean) content.push({type:'text', text:clean});
   for(const c of msg.tool_calls||[]){ let input={}; try{ input = JSON.parse(c.function.arguments||'{}'); }catch{} content.push({type:'tool_use', id:c.id, name:c.function.name, input}); }
   return { content, stop_reason: (msg.tool_calls||[]).length ? 'tool_use' : 'end_turn' };
 }
 const textOf = d => (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-function json(text){ const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<0) throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); return JSON.parse(text.slice(a,b+1)); }
+function json(text){
+  const t = String(text||'').replace(/<think>[\s\S]*?<\/think>/g,'').replace(/```(?:json)?/gi,'');
+  const a=t.indexOf('{'), b=t.lastIndexOf('}');
+  if(a<0||b<0){ console.warn('MiniMax raw:', text); throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); }
+  const raw = t.slice(a,b+1);
+  try{ return JSON.parse(raw); }
+  catch{ try{ return JSON.parse(raw.replace(/,\s*([}\]])/g,'$1')); }catch{ console.warn('MiniMax raw:', text); throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); } }
+}
 function fileBlocks(file){
   const out = [];
   if(file?.pdf) out.push({type:'document', source:{type:'base64', media_type:'application/pdf', data:file.pdf}});
