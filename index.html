@@ -238,7 +238,7 @@ th{background:var(--alt);color:var(--fg);font-weight:700;border-bottom:1px solid
 td{border-top:1px solid var(--line)}
 td.code,td.art,.ci .c{font-family:var(--mono);color:var(--fg)}
 td.art{color:var(--muted)}
-tr.miss td{background:var(--tint)} tr.miss .nm{color:var(--brand-ink)}
+tr.miss td{background:var(--tint)} tr.miss .nm{color:var(--brand-ink)} tr.an td:first-child{box-shadow:inset 3px 0 0 var(--brand)} tr.an .note{color:var(--brand-ink)}
 .res{background:var(--surface);border:1px solid var(--line)}
 .res h4{border-left:0;padding-left:0;font-size:20px;line-height:26px;font-weight:700}
 .modes button.on{background:var(--tint)!important;border-color:var(--brand-ink)!important;color:var(--brand-ink)!important}
@@ -464,6 +464,7 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
 <style>body{margin:0;padding-top:env(safe-area-inset-top,0px)}</style>
 </head>
 <body>
+<div id="mmCost" style="position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:999;font:11px/1.3 'Open Sans',sans-serif;background:#fff3cd;color:#664d03;border:1px solid #ffe69c;border-radius:8px;padding:3px 10px;white-space:nowrap;max-width:96vw;overflow:hidden;text-overflow:ellipsis">MiniMax M3.1 Flash</div>
 
 <header>
   <div class="gut hrow"><div class="in">
@@ -563,7 +564,58 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const MODEL = 'claude-opus-5-5';
+// ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
+const MM = { minimax:{ url:'https://api.minimax.io/anthropic/v1/messages', model:'MiniMax-M3.1-Flash' },
+             openrouter:{ url:'https://openrouter.ai/api/v1/chat/completions', model:'minimax/minimax-m3.1-flash' } };
+// Проксі Google Apps Script: ключ MiniMax лежить на проксі; користувач реєструється і отримує токен.
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbxUcsHI9dwTH3pIKess3OKjIlpSBeBZxOcV-oZKR-yRBJSfxY_dpDe57JAiqNAwzo4p/exec';
+const provider = () => 'proxy';
+const USAGE = { in:0, out:0 };
+// ── Реєстрація при першому вході. Користувачі — у Google Таблиці «Hotpoint.ai — користувачі» ──
+async function proxyCall(payload){
+  const res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify(payload)});
+  return res.json();
+}
+function mmBar(){ const bar = document.getElementById('mmCost'); const u = ls.get('hpuser'); if(bar && u) bar.textContent = `MiniMax M3.1 Flash · ${u.name}`; }
+function mmGate(mode){
+  let g = document.getElementById('mmGate');
+  if(!g){ g = document.createElement('div'); g.id='mmGate'; document.body.appendChild(g); }
+  g.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(20,20,20,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:"Open Sans",sans-serif';
+  const box = 'background:#fff;border-radius:16px;max-width:380px;width:100%;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.25)';
+  const inp = 'width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:10px 12px;border:1px solid #d0d0d0;border-radius:10px;margin-top:4px';
+  if(mode === 'closed'){
+    g.innerHTML = `<div style="${box}"><h2 style="margin:0 0 8px;font-size:20px">Доступ закрито</h2><p style="margin:0;color:#555">Ваш доступ до помічника «Гарячої Точки» закрито. Зверніться до адміністратора.</p></div>`;
+    return;
+  }
+  g.innerHTML = `<form id="mmReg" style="${box}">
+    <h2 style="margin:0 0 4px;font-size:20px">Реєстрація</h2>
+    <p style="margin:0 0 14px;color:#555;font-size:14px">Перед першим використанням помічника «Гарячої Точки» заповніть дані.</p>
+    <label style="display:block;font-size:13px;color:#444;margin-bottom:10px">ПІБ<input name="name" required autocomplete="name" style="${inp}"></label>
+    <label style="display:block;font-size:13px;color:#444;margin-bottom:10px">Пошта<input name="email" type="email" required autocomplete="email" style="${inp}"></label>
+    <label style="display:block;font-size:13px;color:#444;margin-bottom:14px">Телефон<input name="phone" type="tel" required autocomplete="tel" placeholder="+380…" style="${inp}"></label>
+    <div id="mmRegErr" style="color:#b42318;font-size:13px;min-height:18px;margin-bottom:6px"></div>
+    <button style="width:100%;font:inherit;font-weight:700;font-size:15px;padding:12px;border:0;border-radius:10px;background:#c2410c;color:#fff;cursor:pointer">Зареєструватися</button>
+  </form>`;
+  document.getElementById('mmReg').onsubmit = async e => {
+    e.preventDefault(); const f = e.target, btn = f.querySelector('button'), err = document.getElementById('mmRegErr');
+    btn.disabled = true; btn.textContent = 'Реєструю…'; err.textContent = '';
+    try{
+      const w = await proxyCall({action:'register', name:f.name.value, email:f.email.value, phone:f.phone.value});
+      if(w.status === 403) return mmGate('closed');
+      if(w.status !== 200 || !w.data?.token) throw new Error(w.data?.error?.message || 'Не вдалося зареєструватися');
+      ls.set('hpuser', {token:w.data.token, name:w.data.name}); g.remove(); mmBar(); hideErr();
+    }catch(ex){ err.textContent = ex.message || 'Немає з\'єднання. Спробуйте ще раз.'; btn.disabled = false; btn.textContent = 'Зареєструватися'; }
+  };
+}
+async function mmStart(){
+  if(!apiKey()) return mmGate('register');
+  mmBar();
+  try{ const w = await proxyCall({action:'check', token:apiKey()});
+    if(w.status === 403) mmGate('closed');
+    else if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); }
+  }catch{}
+}
+setTimeout(mmStart, 0);
 const CATS = [['rough_plumbing','Чорнова'],['finish_plumbing','Чистова'],['rough_electrical','Електрика']];
 const STARTERS = { calc:'Я хочу порахувати товар. Ось мій список: ', project:'Я хочу зробити проєкт інженерних мереж за дизайн-проєктом. Квартира ', pick:'Я хочу підібрати ' };
 // Прайси «Гарячої Точки» у Google Таблицях (папка ПРАЙСИ). Доступ: «усі, хто має посилання — читач».
@@ -574,12 +626,34 @@ const S = { cid:null, mode:'calc', file:null, cat:[], usd:45.5, eur:51, chat:[],
 const ls = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 // ── Ключ: приходить у посиланні …#key=… і запам'ятовується в браузері ──
-(function(){ const m = location.hash.match(/key=([^&]+)/); if(m){ ls.set('hpkey', decodeURIComponent(m[1])); history.replaceState(null,'',location.pathname); } })();
-const apiKey = () => ls.get('hpkey');
+if(/key=/.test(location.hash)) history.replaceState(null,'',location.pathname);   // старі посилання з ключем більше не потрібні
+const apiKey = () => (ls.get('hpuser')||{}).token;
 
 // ── Прайс з Google Таблиць: [code, art, name, unit, price, usd(0/1), group] ──
-const norm = s => s.toLowerCase().replace(/ø/g,'ф').replace(/[×*]/g,'х').replace(/(\d)x(\d)/g,'$1х$2').replace(/[,"'«»()]/g,' ');
-let HAY = [];
+// ── Пошук по прайсу: токени з розмірами (20х2.8, 1/2, dn15), основи слів, вага рідкісних слів (IDF) ──
+const SYN = { 'фитин':'фітин','тройн':'трійн','уголь':'кутни','угол':'кутни','колін':'кутни','отвод':'кутни','муфта':'муфта','перех':'перех','кран':'кран','шаров':'кульо','кульо':'кульо','гильз':'гільз','натяж':'натяж','надвиж':'натяж','пресс':'прес','прес':'прес','резьб':'різьб','наруж':'зовн','внутр':'внутр','латун':'латун','никел':'нікел','нікел':'нікел','хромо':'хром','счетч':'лічил','водом':'лічил','фильт':'фільт','клапа':'клапа','обрат':'зворо','редук':'редук','заглу':'заглу','удлин':'подов','подов':'подов','прокл':'прокл','утепл':'утепл','гофро':'гофро','крепл':'кріпл','крюк':'крюк','хомут':'хомут' };
+function toks(str){
+  let s = String(str||'').toLowerCase().replace(/ё/g,'е').replace(/[øⵁ⌀]/g,' ф ')
+    .replace(/(\d),(\d)/g,'$1.$2')
+    .replace(/(\d)\s*(?:''|"|″|”|“|дюйм)/g,'$1 ')
+    .replace(/(\d)\s*[x×*хХ]\s*(?=\d)/g,'$1×')
+    .replace(/(\d)\s*(?:мм|mm)(?![a-zа-яіїєґ])/g,'$1 ')
+    .replace(/([a-zа-яіїєґ])(\d)/g,'$1 $2').replace(/(\d)([a-zа-яіїєґ])/g,'$1 $2');
+  const out = new Set();
+  for(let t of s.split(/[^a-zа-яіїєґ0-9.\/×]+/)){
+    t = t.replace(/^[.\/]+|[.\/]+$/g,''); if(!t) continue;
+    if(/\d/.test(t)){
+      t = t.replace(/(\d)\.0+(?=×|$)/g,'$1');            // 2.0 → 2
+      out.add('#'+t);
+      if(t.includes('×')) for(const p of t.split('×')) if(p) out.add('#'+p);
+    } else if(t.length >= 2){
+      const k = t.length > 5 ? t.slice(0,5) : t; out.add(SYN[k] || SYN[t.slice(0,4)] || k);
+    }
+  }
+  return out;
+}
+const sizesOf = str => [...toks(str)].filter(k => /^#.*[×\/]/.test(k));     // складні розміри: 20×2.8, 1/2, 20×16×20
+let HAY = [], IDX = new Map();
 const num = v => { const n = parseFloat(String(v).replace(/[\s ]/g,'').replace(',','.')); return isFinite(n) ? n : NaN; };
 function parseRows(rows, group){
   const out = [];
@@ -612,7 +686,7 @@ async function loadCatalog(){
     }catch(e){ failed++; }
     status.textContent = `Завантажую прайс… ${++done} з ${names.length}`;
   }));
-  S.cat = [...map.values()]; HAY = S.cat.map(it => norm(`${it[0]} ${it[1]} ${it[2]} ${it[6]}`));
+  S.cat = [...map.values()]; buildIndex();
   if(!S.cat.length){ status.classList.remove('loading'); status.textContent = 'Не вдалося відкрити прайс. Перевірте, що папка ПРАЙСИ в Google Drive відкрита на перегляд «усім, хто має посилання».'; status.className = 'err'; return; }
   status.classList.remove('loading');
   status.textContent = `Прайс: ${S.cat.length.toLocaleString('uk-UA')} товарів${failed?` (не відкрилось файлів: ${failed})`:''}`;
@@ -620,11 +694,28 @@ async function loadCatalog(){
 }
 const uah = it => it[5]===1 ? it[4]*S.usd : it[5]===2 ? it[4]*S.eur : it[4];
 async function loadRates(){ try{ const r = await (await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json')).json(); for(const x of r){ if(x.cc==='USD') S.usd = x.rate; if(x.cc==='EUR') S.eur = x.rate; } }catch{} }
-function search(q, limit){
-  const terms = norm(q).split(/\s+/).filter(Boolean); if(!terms.length) return S.cat.slice(0,limit);
-  const sc = [];
-  for(let i=0;i<S.cat.length;i++){ let s=0; const h=HAY[i]; for(const t of terms) if(h.includes(t)) s += t.length>2?2:1; if(s) sc.push([s,i]); }
-  sc.sort((a,b)=>b[0]-a[0]); return sc.slice(0,limit).map(x=>S.cat[x[1]]);
+function buildIndex(){
+  IDX = new Map(); HAY = new Array(S.cat.length);
+  S.cat.forEach((it,i) => { const t = toks(`${it[1]} ${it[2]}`); t.add(it[0]); if(it[1]) t.add(String(it[1]).toLowerCase()); HAY[i] = t;
+    for(const k of t){ let a = IDX.get(k); if(!a) IDX.set(k, a=[]); a.push(i); } });
+}
+// q — рядок або масив запитів; brands — бренди, яким дати перевагу
+function search(q, limit, brands = []){
+  const qs = (Array.isArray(q) ? q : [q]).filter(Boolean), N = S.cat.length || 1, best = new Map();
+  const bk = brands.map(b => [...toks(b)]).filter(a => a.length);
+  for(const one of qs){
+    const keys = [...toks(one)], sc = new Map();
+    const raw = String(one).toLowerCase().split(/[\s,;]+/).filter(t => /\d/.test(t) && t.length >= 5);   // точний код/артикул
+    for(const k of [...keys, ...raw]){ const a = IDX.get(k); if(!a) continue;
+      const w = Math.log(1 + N / a.length) * (k.startsWith('#') ? (/[×\/]/.test(k) ? 3 : 1.6) : 1) * (/^\d{11}$/.test(k) ? 20 : 1);
+      for(const i of a) sc.set(i, (sc.get(i)||0) + w); }
+    const kset = new Set(keys), bq = bk.filter(b => b.every(k => kset.has(k)));   // бренд підсилюємо, лише коли він є в цьому запиті
+    for(const [i,v] of sc){ let x = v; const h = HAY[i];
+      for(const b of bq) if(b.every(k => h.has(k))) x += 6;
+      if(h.has('зразо')) x -= 8; if(h.has('части')) x -= 3;
+      if(x > (best.get(i)||0)) best.set(i, x); }
+  }
+  return [...best].sort((a,b) => b[1]-a[1]).slice(0, limit).map(x => S.cat[x[0]]);
 }
 
 // ── Режими і заготовки ──
@@ -659,8 +750,7 @@ async function take(f){
     const file = {name:f.name, images:[], pdf:null, text:''};
     if(f.type.startsWith('image/')) file.images = [await b64(await shrink(f))];
     else if(f.type==='application/pdf' || /\.pdf$/i.test(f.name)){
-      if(f.size < 18*1024*1024) file.pdf = await b64(f);
-      else file.images = await Promise.all((await pdfPages(f)).map(b64));
+      file.images = await Promise.all((await pdfPages(f)).map(b64));
     }
     else if(/\.(xlsx|xls)$/i.test(f.name)){ const wb = XLSX.read(await f.arrayBuffer()); file.text = wb.SheetNames.map(s=>`# ${s}\n`+XLSX.utils.sheet_to_csv(wb.Sheets[s])).join('\n'); }
     else file.text = await f.text();
@@ -675,21 +765,75 @@ function renderAtt(){
 function showErr(m){ $('err').textContent=m; $('err').hidden=false; }
 function hideErr(){ $('err').hidden=true; }
 
-// ── Claude API (ключ власника, напряму з браузера) ──
-async function claude(messages, extra = {}){
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{ 'content-type':'application/json', 'x-api-key':apiKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-    body: JSON.stringify({ model:MODEL, max_tokens:16000, messages, ...extra }),
-  });
+// ── MiniMax API (тест). Формат запитів — як у Claude, тому решта коду не змінюється ──
+function countUsage(i,o){ USAGE.in+=i||0; USAGE.out+=o||0; const usd = USAGE.in/1e6*0.15 + USAGE.out/1e6*0.60;
+  const el = document.getElementById('mmCost'); if(el) el.textContent = `MiniMax M3.1 Flash · за сесію: ${Math.round(USAGE.in/1000)}k вх / ${Math.round(USAGE.out/1000)}k вих токенів ≈ $${usd.toFixed(4)} (${(usd*S.usd).toFixed(2)} грн)`; }
+async function post(url, headers, body){
+  let res; try{ res = await fetch(url, {method:'POST', headers, body:JSON.stringify(body)}); }
+  catch(e){ throw new Error(provider()==='minimax' ? 'Браузер не зміг достукатись до api.minimax.io (ймовірно, MiniMax не дозволяє запити прямо з сайту). Спробуйте посилання з ключем OpenRouter (sk-or-…).' : 'Немає з\'єднання з OpenRouter.'); }
   const data = await res.json().catch(() => ({}));
-  if(res.status === 401) throw new Error('Ключ не підходить або вимкнений. Попросіть нове посилання.');
+  if(res.status === 401) throw new Error('Ключ не підходить або вимкнений.');
   if(res.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
-  if(!res.ok) throw new Error(data?.error?.message || `помилка ${res.status}`);
+  if(!res.ok) throw new Error(data?.error?.message || data?.base_resp?.status_msg || `помилка ${res.status}`);
   return data;
 }
+async function claude(messages, extra = {}){
+  const tools = (extra.tools||[]).filter(t => !t.type);   // web_search працює лише в Claude — прибираємо
+  const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools; const effort = ex.reasoning || 'low'; delete ex.reasoning;
+  if(provider() === 'minimax'){
+    const d = await post(MM.minimax.url, { 'content-type':'application/json', 'x-api-key':apiKey(), 'authorization':'Bearer '+apiKey(), 'anthropic-version':'2023-06-01' },
+      { model:MM.minimax.model, max_tokens:16000, messages, ...ex });
+    countUsage(d.usage?.input_tokens, d.usage?.output_tokens);
+    return d;
+  }
+  // OpenRouter: переклад Claude-формату ↔ OpenAI-формат
+  const oai = [];
+  for(const m of messages){
+    const parts = typeof m.content === 'string' ? [{type:'text', text:m.content}] : m.content;
+    if(m.role === 'assistant'){
+      const text = parts.filter(b=>b.type==='text').map(b=>b.text).join('');
+      const calls = parts.filter(b=>b.type==='tool_use').map(b=>({id:b.id, type:'function', function:{name:b.name, arguments:JSON.stringify(b.input||{})}}));
+      oai.push({role:'assistant', content:text||null, ...(calls.length?{tool_calls:calls}:{})}); continue;
+    }
+    const results = parts.filter(b=>b.type==='tool_result');
+    for(const r of results) oai.push({role:'tool', tool_call_id:r.tool_use_id, content:String(r.content)});
+    const rest = parts.filter(b=>b.type!=='tool_result').map(b => b.type==='image' ? {type:'image_url', image_url:{url:`data:${b.source.media_type};base64,${b.source.data}`}} : {type:'text', text:b.text});
+    if(rest.length) oai.push({role:'user', content:rest});
+  }
+  const viaProxy = provider() === 'proxy';
+  // reasoning_effort 'low': M3.1 Flash за замовчуванням думає на 'max' і з'їдає весь ліміт токенів
+  const body = { model: viaProxy ? MM.minimax.model : MM.openrouter.model, max_tokens:Math.max(ex.max_tokens||16000, 16000), reasoning_effort:effort, messages:oai };
+  if(tools.length) body.tools = tools.map(t=>({type:'function', function:{name:t.name, description:t.description, parameters:t.input_schema}}));
+  let d;
+  if(viaProxy){
+    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), format:'openai', body})}); }
+    catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
+    const w = await res.json().catch(() => ({})); d = w.data || {};
+    if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
+    if(w.status === 403){ mmGate('closed'); throw new Error('Доступ закрито. Зверніться до адміністратора.'); }
+    if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
+    if(!w.status || w.status >= 400 || d.base_resp?.status_code) throw new Error(d?.error?.message || d?.base_resp?.status_msg || 'Відповідь задовга або перервалась (ліміт проксі 60 с). Спробуйте менший список.');
+  } else {
+    d = await post(MM.openrouter.url, { 'content-type':'application/json', 'authorization':'Bearer '+apiKey(), 'HTTP-Referer':location.origin, 'X-Title':'Hotpoint.ai test' }, body);
+  }
+  countUsage(d.usage?.prompt_tokens, d.usage?.completion_tokens);
+  const ch = d.choices?.[0] || {}, msg = ch.message || {};
+  if(ch.finish_reason === 'length' && !msg.tool_calls) console.warn('MiniMax: відповідь обрізана по ліміту токенів');
+  const content = [];
+  const clean = String(msg.content||'').replace(/<think>[\s\S]*?<\/think>/g,'').trim();
+  if(clean) content.push({type:'text', text:clean});
+  for(const c of msg.tool_calls||[]){ let input={}; try{ input = JSON.parse(c.function.arguments||'{}'); }catch{} content.push({type:'tool_use', id:c.id, name:c.function.name, input}); }
+  return { content, stop_reason: (msg.tool_calls||[]).length ? 'tool_use' : 'end_turn' };
+}
 const textOf = d => (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-function json(text){ const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<0) throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); return JSON.parse(text.slice(a,b+1)); }
+function json(text){
+  const t = String(text||'').replace(/<think>[\s\S]*?<\/think>/g,'').replace(/```(?:json)?/gi,'');
+  const a=t.indexOf('{'), b=t.lastIndexOf('}');
+  if(a<0||b<0){ console.warn('MiniMax raw:', text); throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); }
+  const raw = t.slice(a,b+1);
+  try{ return JSON.parse(raw); }
+  catch{ try{ return JSON.parse(raw.replace(/,\s*([}\]])/g,'$1')); }catch{ console.warn('MiniMax raw:', text); throw new Error('Помічник відповів не у форматі. Спробуйте ще раз.'); } }
+}
 function fileBlocks(file){
   const out = [];
   if(file?.pdf) out.push({type:'document', source:{type:'base64', media_type:'application/pdf', data:file.pdf}});
@@ -721,7 +865,7 @@ async function send(){
   if(S.busy) return; hideErr();
   const text = $('txt').value.trim(), file = S.file;
   if(!text && !file) return;
-  if(!apiKey()) return showErr('Немає доступу до помічника. Відкрийте сайт за посиланням, яке Вам дали (з ключем у кінці).');
+  if(!apiKey()) return showErr('Спершу зареєструйтесь (оновіть сторінку).');
   if(S.mode!=='pick' && !S.cat.length){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
   $('txt').value=''; grow(); S.file=null; renderAtt();
   $('hero').hidden=true; $('cards').hidden=true;
@@ -734,33 +878,93 @@ async function send(){
 }
 $('send').onclick = send;
 
+// Паралельні запити, не більше n одночасно (проксі Apps Script не любить натовп)
+async function pool(tasks, n){ const out = []; let k = 0;
+  await Promise.all(Array.from({length:Math.min(n,tasks.length)}, async () => { while(k < tasks.length){ const j = k++; out[j] = await tasks[j](); } }));
+  return out; }
+const PICK_RULES = `ПРАВИЛА ПІДБОРУ (як досвідчений менеджер «Гарячої Точки»):
+1. Код бери ТІЛЬКИ зі списку кандидатів цієї потреби. Не вигадуй коди.
+2. Розміри — головне: діаметр, товщина стінки (20х2.8 ≠ 20х2.0), різьба (1/2" ≠ 3/4"), ВР/ЗР, порядок розмірів трійника (20х16х20 ≠ 20х20х16), DN. Інший розмір = НЕ точний.
+3. Система й технологія: push/натяжна ≠ прес ≠ PPR ≠ металопласт ≠ нержавійка. Для води й опалення НІКОЛИ не бери газове. Тип виробу має збігатися (кутовий ≠ прямий, кран ≠ вентиль, коліно ≠ трійник).
+4. Вказівки клієнта щодо брендів/систем ОБОВ'ЯЗКОВІ: якщо клієнт сказав бренд (напр. RAFTEC PUSH) — бери цей бренд, навіть коли в списку інший. Інший бренд — лише коли потрібного розміру цього бренду немає, з поміткою.
+5. Якщо бренд у списку не вказаний клієнтом — бренд з потреби; нема — пріоритет Ekoplastik, Ostendorf, RAFTEC, Grohe, Schneider. Заборонені: AlcaPlast, Imprese, Qtap, Lidz.
+6. Уникай позицій «ЗРАЗОК», «частини», «НЕ ВОЗИМО», якщо є нормальна.
+7. Послуги, роботи, випробування — code null, match "none", note "послуга, не товар".
+8. match: "exact" — тип, розмір, система і (за наявності) бренд збігаються; "analog" — щось відрізняється (в note: ЩО саме, коротко); "none" — нічого придатного (краще none, ніж неправильний розмір).
+9. Якщо не exact — дай query: інший короткий запит для повторного пошуку (тип + розмір + бренд, як пишуть у прайсі 1С, напр. "трійник натяжний 20х16х20 RAFTEC").`;
+const candLine = c => `${c[0]} | ${c[1]||'-'} | ${c[2]} | ${c[3]}`;
+
+async function pickRound(list, prefs, ctx, effort){
+  // list: [{i, need, cands:[...]}]
+  const ask = async part => {
+    const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С під замовлення майстра.\n${prefs?`ВКАЗІВКИ КЛІЄНТА: ${prefs}\n`:''}${ctx?`Контекст замовлення: ${ctx}\n`:''}\n${PICK_RULES}\n\nПОТРЕБИ З КАНДИДАТАМИ (код | артикул | назва | од.):\n${JSON.stringify(part.map(x=>({i:x.i, need:x.need, candidates:x.cands.map(candLine)})))}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000 або null","match":"exact|analog|none","note":"","query":""}]} — по одному запису на кожну потребу.`}], {max_tokens:12000, reasoning:effort})));
+    return r.picks || [];
+  };
+  const size = effort === 'high' ? 6 : 10, parts = [];
+  for(let k=0;k<list.length;k+=size) parts.push(list.slice(k,k+size));
+  const res = await pool(parts.map(part => async () => {
+    try{ return await ask(part); }
+    catch(e){ if(part.length < 2) return []; const h = Math.ceil(part.length/2);   // таймаут/збій — ділимо навпіл і пробуємо ще раз
+      const [a,b] = await Promise.all([ask(part.slice(0,h)).catch(()=>[]), ask(part.slice(h)).catch(()=>[])]); return [...a,...b]; }
+  }), 6);
+  return res.flat();
+}
+
 async function calc(text, file, wait){
   const t0 = Date.now(); const tick = setInterval(()=>{ wait.typing = `${wait.phase||'Читаю'} · ${Math.round((Date.now()-t0)/1000)} с`; renderTyping(wait); }, 700);
   try{
     wait.phase = file ? 'Читаю файл' : 'Розбираю список';
-    const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${text?`Повідомлення клієнта:\n${text}\n`:''}
+    const said = S.chat.filter(m => m.role==='me' && m.text).map(m => m.text).join('\n').trim();   // усе, що клієнт писав у цьому чаті
+    const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${said?`Повідомлення клієнта в цьому чаті:\n${said}\n`:''}
+Вказівки клієнта щодо брендів і систем (напр. «пуш рафтек», «крани рафтек») — ОБОВ'ЯЗКОВІ: застосуй їх до відповідних позицій одразу (впиши бренд у need і search), не перепитуй.
 Поверни ТІЛЬКИ JSON:
-{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","checklist":[{"rule":"","passed":true,"comment":""}],
-"items":[{"need":"що потрібно, з розмірами","search":"3-6 ключових слів для пошуку в прайсі (тип, діаметр, бренд)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
-${S.mode==='calc'?'checklist лиши порожнім.':''}`;
+{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком, або порожньо","brands":["бренди, які клієнт вимагає, напр. RAFTEC"],"checklist":[{"rule":"","passed":true,"comment":""}],
+"items":[{"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С: тип + розмір + бренд","alt":"другий запит іншими словами (синонім, рос. назва, без бренду)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
+Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15. ${S.mode==='calc'?'checklist лиши порожнім.':''}`;
     const draft = json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
     const needs = (draft.items||[]).slice(0,250);
     if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
+    const brands = (draft.brands||[]).filter(b => typeof b==='string' && b.trim()).slice(0,4);
+    const prefs = [draft.prefs, said.length < 600 ? said : ''].filter(Boolean).join(' | ');
+    const ctx = draft.title || '';
     const byCode = new Map(S.cat.map(x=>[x[0],x])), picks = new Map();
-    const chunks = []; for(let i=0;i<needs.length;i+=40) chunks.push(i);
-    let done = 0; wait.phase = `Підбираю коди 0 з ${needs.length}`;
-    await Promise.all(chunks.map(async i => {
-      const chunk = needs.slice(i,i+40).map((n,j)=>({i:i+j, need:n.need, candidates:search(`${n.search||''} ${n.need||''}`,12).map(c=>`${c[0]} | ${c[1]} | ${c[2]} | ${c[3]}`)}));
-      const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С. Для кожної потреби обери код лише з її кандидатів, що точно відповідає (тип, діаметр, різьба, бренд). Нема точного — найближчий аналог з поміткою, або null. Пріоритет: Ekoplastik, Ostendorf, RAFTEC, Grohe, Schneider. Заборонені: AlcaPlast, Imprese, Qtap, Lidz.\n\n${JSON.stringify(chunk)}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000","note":"коротко, якщо аналог або не знайдено"}]} (code може бути null)`}], {max_tokens:8000})));
-      for(const p of (r.picks||[])) picks.set(p.i,p);
-      done += chunk.length; wait.phase = `Підбираю коди ${done} з ${needs.length}`;
-    }));
-    const items = needs.map((n,i)=>{ const p=picks.get(i)||{}; const it = p.code && byCode.get(String(p.code).padStart(11,'0'));
-      return { code: it?it[0]:'—', art: it?it[1]:'', name: it?it[2]:`НЕ ЗНАЙДЕНО: ${n.need}`, qty:Number(n.qty)||1, unit: it?it[3]:(n.unit||'шт'),
-        category: CATS.some(c=>c[0]===n.category)?n.category:'rough_plumbing', price: it?Math.round(uah(it)*100)/100:0, note:[n.note,p.note].filter(Boolean).join(' · ') }; });
-    const miss = items.filter(i=>i.code==='—').length;
+    const fix = c => c && byCode.get(String(c).replace(/\D/g,'').padStart(11,'0'));
+
+    // Раунд 1: широкий пошук (3 запити, 20 кандидатів) + підбір із міркуваннями
+    wait.phase = `Підбираю коди · ${needs.length} позицій`;
+    const r1 = needs.map((n,i) => ({ i, need:n.need, cands: search([n.search, n.alt, n.need], 20, brands) }));
+    for(const p of await pickRound(r1, prefs, ctx, 'medium')) if(Number.isInteger(+p.i)) picks.set(+p.i, p);
+
+    // Перевірка розмірів кодом: «точний» з іншим розміром → аналог
+    const check = (i, p) => { const it = fix(p.code); if(!it){ if(p.code) p.code = null; return p; }
+      const need = sizesOf(needs[i].need), got = toks(`${it[1]} ${it[2]}`);
+      const lost = need.filter(k => !got.has(k));
+      if(p.match === 'exact' && lost.length) { p.match = 'analog'; p.note = [p.note, `розмір ${lost.map(k=>k.slice(1).replace(/×/g,'х')).join(', ')} не підтверджено`].filter(Boolean).join('; '); }
+      return p; };
+    for(const [i,p] of picks) check(i,p);
+
+    // Раунд 2: все, що не точне, — новий пошук за підказкою моделі, більше кандидатів, глибші міркування
+    const weak = needs.map((n,i) => i).filter(i => { const p = picks.get(i); return !p || (p.match !== 'exact' && !/послуг/i.test(p.note||'')); });
+    if(weak.length){
+      wait.phase = `Перевіряю сумнівні · ${weak.length}`;
+      const r2 = weak.map(i => { const n = needs[i], p = picks.get(i) || {};
+        const c = search([p.query, n.search, n.alt, n.need].filter(Boolean), 30, brands); const prev = fix(p.code);
+        if(prev && !c.includes(prev)) c.unshift(prev);
+        return { i, need: n.need + (p.code ? ` (попередній вибір ${p.code}: ${p.note||''})` : ''), cands: c }; });
+      for(const p of await pickRound(r2, prefs, ctx, 'high')){
+        const i = +p.i; if(!weak.includes(i)) continue; check(i, p);
+        const old = picks.get(i); const rank = x => !x || !fix(x.code) ? 0 : x.match === 'exact' ? 2 : 1;
+        if(rank(p) >= rank(old)) picks.set(i, p);
+      }
+    }
+
+    const items = needs.map((n,i)=>{ const p=picks.get(i)||{}; const it = fix(p.code);
+      const tag = it && p.match !== 'exact' ? 'АНАЛОГ' : '';
+      return { code: it?it[0]:'—', art: it?it[1]:'', name: it?it[2]:`НЕ ЗНАЙДЕНО: ${n.need}`, qty:Number(n.qty)||1, unit: it?it[3]:(n.unit||'шт'), match: it ? (p.match==='exact'?'exact':'analog') : 'none',
+        category: CATS.some(c=>c[0]===n.category)?n.category:'rough_plumbing', price: it?Math.round(uah(it)*100)/100:0, note:[n.note, tag && p.note ? `${tag}: ${p.note}` : tag || (!it ? p.note : '')].filter(Boolean).join(' · ') }; });
+    const miss = items.filter(i=>i.code==='—').length, an = items.filter(i=>i.match==='analog').length;
     wait.typing=null;
-    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length} позицій${miss?`, ${miss} не знайшов — вони підсвічені`:''}. Кількість можна змінити прямо в таблиці.`;
+    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
     wait.res = { title: draft.title||'Специфікація', items, checklist: draft.checklist||[], tab:(CATS.find(c=>items.some(i=>i.category===c[0]))||CATS[0])[0] };
     render(); save();
   } finally { clearInterval(tick); }
@@ -851,7 +1055,7 @@ function resEl(m){
     const b=document.createElement('button'); b.className = r.tab===c?'on':''; b.textContent = `${l} · ${n}`; b.onclick=()=>{ r.tab=c; save(); el.replaceWith(resEl(m)); }; el.querySelector('.tabs').appendChild(b); }
   const tb = el.querySelector('tbody');
   rows.forEach((it,k) => {
-    const tr = document.createElement('tr'); if(it.code==='—') tr.className='miss';
+    const tr = document.createElement('tr'); if(it.code==='—') tr.className='miss'; else if(it.match==='analog') tr.className='an';
     tr.innerHTML = `<td class="small">${k+1}</td><td class="code">${esc(it.code)}</td><td class="art">${esc(it.art||'—')}</td><td><div class="nm">${esc(it.name)}</div>${it.note?`<div class="note">${esc(it.note)}</div>`:''}</td><td><input type="number" min="0" step="any" value="${it.qty}" aria-label="Кількість"></td><td class="small">${esc(it.unit)}</td><td class="num">${it.price?fmt(it.price):'—'}</td><td class="num">${it.price?fmt(it.price*it.qty):'—'}</td><td><button class="x" aria-label="Видалити">✕</button></td>`;
     tr.querySelector('input').onchange = e => { it.qty = Number(e.target.value)||0; save(); el.replaceWith(resEl(m)); };
     tr.querySelector('.x').onclick = () => { r.items.splice(r.items.indexOf(it),1); save(); el.replaceWith(resEl(m)); };
@@ -977,7 +1181,7 @@ $('capsBtn').onclick = () => {
   document.body.classList.add('introMode'); setMode(S.mode);
   const old = (ls.get('chat')||[]).filter(m=>!m.typing); if(old.length){ S.chat = old; save(); S.chat = []; S.cid = null; try{ localStorage.removeItem('chat'); }catch{} }
   loadRates(); S.catPromise = loadCatalog();
-  if(!apiKey()) showErr('Відкрийте сайт за посиланням, яке Вам дали (з ключем у кінці), щоб помічник запрацював.');
+  if(!apiKey()) showErr('Спершу зареєструйтесь (оновіть сторінку).');
 })();
 
 </script>

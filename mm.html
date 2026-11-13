@@ -238,7 +238,7 @@ th{background:var(--alt);color:var(--fg);font-weight:700;border-bottom:1px solid
 td{border-top:1px solid var(--line)}
 td.code,td.art,.ci .c{font-family:var(--mono);color:var(--fg)}
 td.art{color:var(--muted)}
-tr.miss td{background:var(--tint)} tr.miss .nm{color:var(--brand-ink)}
+tr.miss td{background:var(--tint)} tr.miss .nm{color:var(--brand-ink)} tr.an td:first-child{box-shadow:inset 3px 0 0 var(--brand)} tr.an .note{color:var(--brand-ink)}
 .res{background:var(--surface);border:1px solid var(--line)}
 .res h4{border-left:0;padding-left:0;font-size:20px;line-height:26px;font-weight:700}
 .modes button.on{background:var(--tint)!important;border-color:var(--brand-ink)!important;color:var(--brand-ink)!important}
@@ -630,8 +630,30 @@ if(/key=/.test(location.hash)) history.replaceState(null,'',location.pathname); 
 const apiKey = () => (ls.get('hpuser')||{}).token;
 
 // ── Прайс з Google Таблиць: [code, art, name, unit, price, usd(0/1), group] ──
-const norm = s => s.toLowerCase().replace(/ø/g,'ф').replace(/[×*]/g,'х').replace(/(\d)x(\d)/g,'$1х$2').replace(/[,"'«»()]/g,' ');
-let HAY = [];
+// ── Пошук по прайсу: токени з розмірами (20х2.8, 1/2, dn15), основи слів, вага рідкісних слів (IDF) ──
+const SYN = { 'фитин':'фітин','тройн':'трійн','уголь':'кутни','угол':'кутни','колін':'кутни','отвод':'кутни','муфта':'муфта','перех':'перех','кран':'кран','шаров':'кульо','кульо':'кульо','гильз':'гільз','натяж':'натяж','надвиж':'натяж','пресс':'прес','прес':'прес','резьб':'різьб','наруж':'зовн','внутр':'внутр','латун':'латун','никел':'нікел','нікел':'нікел','хромо':'хром','счетч':'лічил','водом':'лічил','фильт':'фільт','клапа':'клапа','обрат':'зворо','редук':'редук','заглу':'заглу','удлин':'подов','подов':'подов','прокл':'прокл','утепл':'утепл','гофро':'гофро','крепл':'кріпл','крюк':'крюк','хомут':'хомут' };
+function toks(str){
+  let s = String(str||'').toLowerCase().replace(/ё/g,'е').replace(/[øⵁ⌀]/g,' ф ')
+    .replace(/(\d),(\d)/g,'$1.$2')
+    .replace(/(\d)\s*(?:''|"|″|”|“|дюйм)/g,'$1 ')
+    .replace(/(\d)\s*[x×*хХ]\s*(?=\d)/g,'$1×')
+    .replace(/(\d)\s*(?:мм|mm)(?![a-zа-яіїєґ])/g,'$1 ')
+    .replace(/([a-zа-яіїєґ])(\d)/g,'$1 $2').replace(/(\d)([a-zа-яіїєґ])/g,'$1 $2');
+  const out = new Set();
+  for(let t of s.split(/[^a-zа-яіїєґ0-9.\/×]+/)){
+    t = t.replace(/^[.\/]+|[.\/]+$/g,''); if(!t) continue;
+    if(/\d/.test(t)){
+      t = t.replace(/(\d)\.0+(?=×|$)/g,'$1');            // 2.0 → 2
+      out.add('#'+t);
+      if(t.includes('×')) for(const p of t.split('×')) if(p) out.add('#'+p);
+    } else if(t.length >= 2){
+      const k = t.length > 5 ? t.slice(0,5) : t; out.add(SYN[k] || SYN[t.slice(0,4)] || k);
+    }
+  }
+  return out;
+}
+const sizesOf = str => [...toks(str)].filter(k => /^#.*[×\/]/.test(k));     // складні розміри: 20×2.8, 1/2, 20×16×20
+let HAY = [], IDX = new Map();
 const num = v => { const n = parseFloat(String(v).replace(/[\s ]/g,'').replace(',','.')); return isFinite(n) ? n : NaN; };
 function parseRows(rows, group){
   const out = [];
@@ -664,7 +686,7 @@ async function loadCatalog(){
     }catch(e){ failed++; }
     status.textContent = `Завантажую прайс… ${++done} з ${names.length}`;
   }));
-  S.cat = [...map.values()]; HAY = S.cat.map(it => norm(`${it[0]} ${it[1]} ${it[2]} ${it[6]}`));
+  S.cat = [...map.values()]; buildIndex();
   if(!S.cat.length){ status.classList.remove('loading'); status.textContent = 'Не вдалося відкрити прайс. Перевірте, що папка ПРАЙСИ в Google Drive відкрита на перегляд «усім, хто має посилання».'; status.className = 'err'; return; }
   status.classList.remove('loading');
   status.textContent = `Прайс: ${S.cat.length.toLocaleString('uk-UA')} товарів${failed?` (не відкрилось файлів: ${failed})`:''}`;
@@ -672,11 +694,28 @@ async function loadCatalog(){
 }
 const uah = it => it[5]===1 ? it[4]*S.usd : it[5]===2 ? it[4]*S.eur : it[4];
 async function loadRates(){ try{ const r = await (await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json')).json(); for(const x of r){ if(x.cc==='USD') S.usd = x.rate; if(x.cc==='EUR') S.eur = x.rate; } }catch{} }
-function search(q, limit){
-  const terms = norm(q).split(/\s+/).filter(Boolean); if(!terms.length) return S.cat.slice(0,limit);
-  const sc = [];
-  for(let i=0;i<S.cat.length;i++){ let s=0; const h=HAY[i]; for(const t of terms) if(h.includes(t)) s += t.length>2?2:1; if(s) sc.push([s,i]); }
-  sc.sort((a,b)=>b[0]-a[0]); return sc.slice(0,limit).map(x=>S.cat[x[1]]);
+function buildIndex(){
+  IDX = new Map(); HAY = new Array(S.cat.length);
+  S.cat.forEach((it,i) => { const t = toks(`${it[1]} ${it[2]}`); t.add(it[0]); if(it[1]) t.add(String(it[1]).toLowerCase()); HAY[i] = t;
+    for(const k of t){ let a = IDX.get(k); if(!a) IDX.set(k, a=[]); a.push(i); } });
+}
+// q — рядок або масив запитів; brands — бренди, яким дати перевагу
+function search(q, limit, brands = []){
+  const qs = (Array.isArray(q) ? q : [q]).filter(Boolean), N = S.cat.length || 1, best = new Map();
+  const bk = brands.map(b => [...toks(b)]).filter(a => a.length);
+  for(const one of qs){
+    const keys = [...toks(one)], sc = new Map();
+    const raw = String(one).toLowerCase().split(/[\s,;]+/).filter(t => /\d/.test(t) && t.length >= 5);   // точний код/артикул
+    for(const k of [...keys, ...raw]){ const a = IDX.get(k); if(!a) continue;
+      const w = Math.log(1 + N / a.length) * (k.startsWith('#') ? (/[×\/]/.test(k) ? 3 : 1.6) : 1) * (/^\d{11}$/.test(k) ? 20 : 1);
+      for(const i of a) sc.set(i, (sc.get(i)||0) + w); }
+    const kset = new Set(keys), bq = bk.filter(b => b.every(k => kset.has(k)));   // бренд підсилюємо, лише коли він є в цьому запиті
+    for(const [i,v] of sc){ let x = v; const h = HAY[i];
+      for(const b of bq) if(b.every(k => h.has(k))) x += 6;
+      if(h.has('зразо')) x -= 8; if(h.has('части')) x -= 3;
+      if(x > (best.get(i)||0)) best.set(i, x); }
+  }
+  return [...best].sort((a,b) => b[1]-a[1]).slice(0, limit).map(x => S.cat[x[0]]);
 }
 
 // ── Режими і заготовки ──
@@ -740,7 +779,7 @@ async function post(url, headers, body){
 }
 async function claude(messages, extra = {}){
   const tools = (extra.tools||[]).filter(t => !t.type);   // web_search працює лише в Claude — прибираємо
-  const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools;
+  const ex = {...extra}; delete ex.tools; if(tools.length) ex.tools = tools; const effort = ex.reasoning || 'low'; delete ex.reasoning;
   if(provider() === 'minimax'){
     const d = await post(MM.minimax.url, { 'content-type':'application/json', 'x-api-key':apiKey(), 'authorization':'Bearer '+apiKey(), 'anthropic-version':'2023-06-01' },
       { model:MM.minimax.model, max_tokens:16000, messages, ...ex });
@@ -763,7 +802,7 @@ async function claude(messages, extra = {}){
   }
   const viaProxy = provider() === 'proxy';
   // reasoning_effort 'low': M3.1 Flash за замовчуванням думає на 'max' і з'їдає весь ліміт токенів
-  const body = { model: viaProxy ? MM.minimax.model : MM.openrouter.model, max_tokens:Math.max(ex.max_tokens||16000, 16000), reasoning_effort:'low', messages:oai };
+  const body = { model: viaProxy ? MM.minimax.model : MM.openrouter.model, max_tokens:Math.max(ex.max_tokens||16000, 16000), reasoning_effort:effort, messages:oai };
   if(tools.length) body.tools = tools.map(t=>({type:'function', function:{name:t.name, description:t.description, parameters:t.input_schema}}));
   let d;
   if(viaProxy){
@@ -839,33 +878,93 @@ async function send(){
 }
 $('send').onclick = send;
 
+// Паралельні запити, не більше n одночасно (проксі Apps Script не любить натовп)
+async function pool(tasks, n){ const out = []; let k = 0;
+  await Promise.all(Array.from({length:Math.min(n,tasks.length)}, async () => { while(k < tasks.length){ const j = k++; out[j] = await tasks[j](); } }));
+  return out; }
+const PICK_RULES = `ПРАВИЛА ПІДБОРУ (як досвідчений менеджер «Гарячої Точки»):
+1. Код бери ТІЛЬКИ зі списку кандидатів цієї потреби. Не вигадуй коди.
+2. Розміри — головне: діаметр, товщина стінки (20х2.8 ≠ 20х2.0), різьба (1/2" ≠ 3/4"), ВР/ЗР, порядок розмірів трійника (20х16х20 ≠ 20х20х16), DN. Інший розмір = НЕ точний.
+3. Система й технологія: push/натяжна ≠ прес ≠ PPR ≠ металопласт ≠ нержавійка. Для води й опалення НІКОЛИ не бери газове. Тип виробу має збігатися (кутовий ≠ прямий, кран ≠ вентиль, коліно ≠ трійник).
+4. Вказівки клієнта щодо брендів/систем ОБОВ'ЯЗКОВІ: якщо клієнт сказав бренд (напр. RAFTEC PUSH) — бери цей бренд, навіть коли в списку інший. Інший бренд — лише коли потрібного розміру цього бренду немає, з поміткою.
+5. Якщо бренд у списку не вказаний клієнтом — бренд з потреби; нема — пріоритет Ekoplastik, Ostendorf, RAFTEC, Grohe, Schneider. Заборонені: AlcaPlast, Imprese, Qtap, Lidz.
+6. Уникай позицій «ЗРАЗОК», «частини», «НЕ ВОЗИМО», якщо є нормальна.
+7. Послуги, роботи, випробування — code null, match "none", note "послуга, не товар".
+8. match: "exact" — тип, розмір, система і (за наявності) бренд збігаються; "analog" — щось відрізняється (в note: ЩО саме, коротко); "none" — нічого придатного (краще none, ніж неправильний розмір).
+9. Якщо не exact — дай query: інший короткий запит для повторного пошуку (тип + розмір + бренд, як пишуть у прайсі 1С, напр. "трійник натяжний 20х16х20 RAFTEC").`;
+const candLine = c => `${c[0]} | ${c[1]||'-'} | ${c[2]} | ${c[3]}`;
+
+async function pickRound(list, prefs, ctx, effort){
+  // list: [{i, need, cands:[...]}]
+  const ask = async part => {
+    const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С під замовлення майстра.\n${prefs?`ВКАЗІВКИ КЛІЄНТА: ${prefs}\n`:''}${ctx?`Контекст замовлення: ${ctx}\n`:''}\n${PICK_RULES}\n\nПОТРЕБИ З КАНДИДАТАМИ (код | артикул | назва | од.):\n${JSON.stringify(part.map(x=>({i:x.i, need:x.need, candidates:x.cands.map(candLine)})))}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000 або null","match":"exact|analog|none","note":"","query":""}]} — по одному запису на кожну потребу.`}], {max_tokens:12000, reasoning:effort})));
+    return r.picks || [];
+  };
+  const size = effort === 'high' ? 6 : 10, parts = [];
+  for(let k=0;k<list.length;k+=size) parts.push(list.slice(k,k+size));
+  const res = await pool(parts.map(part => async () => {
+    try{ return await ask(part); }
+    catch(e){ if(part.length < 2) return []; const h = Math.ceil(part.length/2);   // таймаут/збій — ділимо навпіл і пробуємо ще раз
+      const [a,b] = await Promise.all([ask(part.slice(0,h)).catch(()=>[]), ask(part.slice(h)).catch(()=>[])]); return [...a,...b]; }
+  }), 6);
+  return res.flat();
+}
+
 async function calc(text, file, wait){
   const t0 = Date.now(); const tick = setInterval(()=>{ wait.typing = `${wait.phase||'Читаю'} · ${Math.round((Date.now()-t0)/1000)} с`; renderTyping(wait); }, 700);
   try{
     wait.phase = file ? 'Читаю файл' : 'Розбираю список';
-    const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${text?`Повідомлення клієнта:\n${text}\n`:''}
+    const said = S.chat.filter(m => m.role==='me' && m.text).map(m => m.text).join('\n').trim();   // усе, що клієнт писав у цьому чаті
+    const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${said?`Повідомлення клієнта в цьому чаті:\n${said}\n`:''}
+Вказівки клієнта щодо брендів і систем (напр. «пуш рафтек», «крани рафтек») — ОБОВ'ЯЗКОВІ: застосуй їх до відповідних позицій одразу (впиши бренд у need і search), не перепитуй.
 Поверни ТІЛЬКИ JSON:
-{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","checklist":[{"rule":"","passed":true,"comment":""}],
-"items":[{"need":"що потрібно, з розмірами","search":"3-6 ключових слів для пошуку в прайсі (тип, діаметр, бренд)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
-${S.mode==='calc'?'checklist лиши порожнім.':''}`;
+{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком, або порожньо","brands":["бренди, які клієнт вимагає, напр. RAFTEC"],"checklist":[{"rule":"","passed":true,"comment":""}],
+"items":[{"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С: тип + розмір + бренд","alt":"другий запит іншими словами (синонім, рос. назва, без бренду)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
+Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15. ${S.mode==='calc'?'checklist лиши порожнім.':''}`;
     const draft = json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
     const needs = (draft.items||[]).slice(0,250);
     if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
+    const brands = (draft.brands||[]).filter(b => typeof b==='string' && b.trim()).slice(0,4);
+    const prefs = [draft.prefs, said.length < 600 ? said : ''].filter(Boolean).join(' | ');
+    const ctx = draft.title || '';
     const byCode = new Map(S.cat.map(x=>[x[0],x])), picks = new Map();
-    const chunks = []; for(let i=0;i<needs.length;i+=40) chunks.push(i);
-    let done = 0; wait.phase = `Підбираю коди 0 з ${needs.length}`;
-    await Promise.all(chunks.map(async i => {
-      const chunk = needs.slice(i,i+40).map((n,j)=>({i:i+j, need:n.need, candidates:search(`${n.search||''} ${n.need||''}`,12).map(c=>`${c[0]} | ${c[1]} | ${c[2]} | ${c[3]}`)}));
-      const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С. Для кожної потреби обери код лише з її кандидатів, що точно відповідає (тип, діаметр, різьба, бренд). Нема точного — найближчий аналог з поміткою, або null. Пріоритет: Ekoplastik, Ostendorf, RAFTEC, Grohe, Schneider. Заборонені: AlcaPlast, Imprese, Qtap, Lidz.\n\n${JSON.stringify(chunk)}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000","note":"коротко, якщо аналог або не знайдено"}]} (code може бути null)`}], {max_tokens:8000})));
-      for(const p of (r.picks||[])) picks.set(p.i,p);
-      done += chunk.length; wait.phase = `Підбираю коди ${done} з ${needs.length}`;
-    }));
-    const items = needs.map((n,i)=>{ const p=picks.get(i)||{}; const it = p.code && byCode.get(String(p.code).padStart(11,'0'));
-      return { code: it?it[0]:'—', art: it?it[1]:'', name: it?it[2]:`НЕ ЗНАЙДЕНО: ${n.need}`, qty:Number(n.qty)||1, unit: it?it[3]:(n.unit||'шт'),
-        category: CATS.some(c=>c[0]===n.category)?n.category:'rough_plumbing', price: it?Math.round(uah(it)*100)/100:0, note:[n.note,p.note].filter(Boolean).join(' · ') }; });
-    const miss = items.filter(i=>i.code==='—').length;
+    const fix = c => c && byCode.get(String(c).replace(/\D/g,'').padStart(11,'0'));
+
+    // Раунд 1: широкий пошук (3 запити, 20 кандидатів) + підбір із міркуваннями
+    wait.phase = `Підбираю коди · ${needs.length} позицій`;
+    const r1 = needs.map((n,i) => ({ i, need:n.need, cands: search([n.search, n.alt, n.need], 20, brands) }));
+    for(const p of await pickRound(r1, prefs, ctx, 'medium')) if(Number.isInteger(+p.i)) picks.set(+p.i, p);
+
+    // Перевірка розмірів кодом: «точний» з іншим розміром → аналог
+    const check = (i, p) => { const it = fix(p.code); if(!it){ if(p.code) p.code = null; return p; }
+      const need = sizesOf(needs[i].need), got = toks(`${it[1]} ${it[2]}`);
+      const lost = need.filter(k => !got.has(k));
+      if(p.match === 'exact' && lost.length) { p.match = 'analog'; p.note = [p.note, `розмір ${lost.map(k=>k.slice(1).replace(/×/g,'х')).join(', ')} не підтверджено`].filter(Boolean).join('; '); }
+      return p; };
+    for(const [i,p] of picks) check(i,p);
+
+    // Раунд 2: все, що не точне, — новий пошук за підказкою моделі, більше кандидатів, глибші міркування
+    const weak = needs.map((n,i) => i).filter(i => { const p = picks.get(i); return !p || (p.match !== 'exact' && !/послуг/i.test(p.note||'')); });
+    if(weak.length){
+      wait.phase = `Перевіряю сумнівні · ${weak.length}`;
+      const r2 = weak.map(i => { const n = needs[i], p = picks.get(i) || {};
+        const c = search([p.query, n.search, n.alt, n.need].filter(Boolean), 30, brands); const prev = fix(p.code);
+        if(prev && !c.includes(prev)) c.unshift(prev);
+        return { i, need: n.need + (p.code ? ` (попередній вибір ${p.code}: ${p.note||''})` : ''), cands: c }; });
+      for(const p of await pickRound(r2, prefs, ctx, 'high')){
+        const i = +p.i; if(!weak.includes(i)) continue; check(i, p);
+        const old = picks.get(i); const rank = x => !x || !fix(x.code) ? 0 : x.match === 'exact' ? 2 : 1;
+        if(rank(p) >= rank(old)) picks.set(i, p);
+      }
+    }
+
+    const items = needs.map((n,i)=>{ const p=picks.get(i)||{}; const it = fix(p.code);
+      const tag = it && p.match !== 'exact' ? 'АНАЛОГ' : '';
+      return { code: it?it[0]:'—', art: it?it[1]:'', name: it?it[2]:`НЕ ЗНАЙДЕНО: ${n.need}`, qty:Number(n.qty)||1, unit: it?it[3]:(n.unit||'шт'), match: it ? (p.match==='exact'?'exact':'analog') : 'none',
+        category: CATS.some(c=>c[0]===n.category)?n.category:'rough_plumbing', price: it?Math.round(uah(it)*100)/100:0, note:[n.note, tag && p.note ? `${tag}: ${p.note}` : tag || (!it ? p.note : '')].filter(Boolean).join(' · ') }; });
+    const miss = items.filter(i=>i.code==='—').length, an = items.filter(i=>i.match==='analog').length;
     wait.typing=null;
-    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length} позицій${miss?`, ${miss} не знайшов — вони підсвічені`:''}. Кількість можна змінити прямо в таблиці.`;
+    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
     wait.res = { title: draft.title||'Специфікація', items, checklist: draft.checklist||[], tab:(CATS.find(c=>items.some(i=>i.category===c[0]))||CATS[0])[0] };
     render(); save();
   } finally { clearInterval(tick); }
@@ -956,7 +1055,7 @@ function resEl(m){
     const b=document.createElement('button'); b.className = r.tab===c?'on':''; b.textContent = `${l} · ${n}`; b.onclick=()=>{ r.tab=c; save(); el.replaceWith(resEl(m)); }; el.querySelector('.tabs').appendChild(b); }
   const tb = el.querySelector('tbody');
   rows.forEach((it,k) => {
-    const tr = document.createElement('tr'); if(it.code==='—') tr.className='miss';
+    const tr = document.createElement('tr'); if(it.code==='—') tr.className='miss'; else if(it.match==='analog') tr.className='an';
     tr.innerHTML = `<td class="small">${k+1}</td><td class="code">${esc(it.code)}</td><td class="art">${esc(it.art||'—')}</td><td><div class="nm">${esc(it.name)}</div>${it.note?`<div class="note">${esc(it.note)}</div>`:''}</td><td><input type="number" min="0" step="any" value="${it.qty}" aria-label="Кількість"></td><td class="small">${esc(it.unit)}</td><td class="num">${it.price?fmt(it.price):'—'}</td><td class="num">${it.price?fmt(it.price*it.qty):'—'}</td><td><button class="x" aria-label="Видалити">✕</button></td>`;
     tr.querySelector('input').onchange = e => { it.qty = Number(e.target.value)||0; save(); el.replaceWith(resEl(m)); };
     tr.querySelector('.x').onclick = () => { r.items.splice(r.items.indexOf(it),1); save(); el.replaceWith(resEl(m)); };
