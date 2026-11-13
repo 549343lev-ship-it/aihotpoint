@@ -464,7 +464,33 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
   .tpanel h2{font-size:20px;line-height:26px}.tpanel p{font-size:14px;line-height:21px}
 }
 </style>
-<style>body{margin:0;padding-top:env(safe-area-inset-top,0px)}</style>
+<style>body{margin:0;padding-top:env(safe-area-inset-top,0px)}
+/* ── Клієнти / об'єкти ── */
+.ctxbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ctxb{font-size:12.5px;font-weight:600;padding:5px 10px;background:var(--surface)}
+.ctxb b{color:var(--brand-ink)}
+.st{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.st.wait{background:var(--tint);color:var(--brand-ink)} .st.ok{background:#E7F6EC;color:#1E6B3A}
+.cform{display:flex;flex-direction:column;gap:10px;overflow:auto}
+.cform label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.cform input:not([type=checkbox]),.cform textarea,.swapbox input[type=search],#cliQ{font:inherit;font-size:14px;color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:9px 11px}
+.chk{flex-direction:row!important;align-items:center;gap:8px!important}
+.ccard,.obj,.cgrp{border:1px solid var(--line);border-radius:4px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.cgrp{border-color:var(--brand)}
+#cliBody{overflow:auto}
+#cliBody .clist{overflow:visible}
+.btn.sm{font-size:12px;padding:5px 10px}
+.warnb{background:var(--tint);border-left:4px solid var(--brand);padding:10px 12px;font-size:14px;color:var(--brand-ink)}
+.okb{background:#E7F6EC;border-left:4px solid #1E6B3A;padding:10px 12px;font-size:14px;color:#1E6B3A;font-weight:600}
+.swap{font-size:11.5px;padding:2px 8px;margin-top:4px}
+.swaprow td{background:var(--sunk)}
+.swapbox{display:flex;flex-direction:column;gap:6px}
+.opts{display:flex;flex-direction:column;gap:4px;max-height:280px;overflow:auto}
+.opt{text-align:left;font-weight:400;font-size:13px;display:block}
+.opt .c{font-family:var(--mono);color:var(--brand-ink);font-size:12px}
+.cbadge{background:var(--brand);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:2px}
+body.roleClient #mmCost{display:none}
+</style>
 </head>
 <body>
 <div id="mmCost" style="position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:999;font:11px/1.3 'Open Sans',sans-serif;background:#fff3cd;color:#664d03;border:1px solid #ffe69c;border-radius:8px;padding:3px 10px;white-space:nowrap;max-width:96vw;overflow:hidden;text-overflow:ellipsis">MiniMax M3.1 Flash</div>
@@ -477,6 +503,7 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
   </div></div>
   <div class="obar gut"><div class="in">
     <button class="obtn" id="sideBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Мої чати</button>
+    <button class="obtn" id="cliBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.5 3 5.2"/></svg><span id="cliBtnT">Клієнти</span><span class="cbadge" id="cliBadge" hidden></span></button>
     <span class="otitle"></span>
     <button class="obtn ghostw" id="capsBtn">Можливості</button>
     <button class="obtn ghostw" id="newBtn" hidden>+ Новий чат</button>
@@ -522,6 +549,7 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
 </div></main>
 
 <footer class="gut"><div class="in">
+  <div class="ctxbar" id="ctxBar" hidden></div>
   <div class="modes" id="modes" hidden>
     <button data-m="calc" class="on">Порахувати товар</button>
     <button data-m="project">Проєкт мереж</button>
@@ -555,6 +583,7 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
     <section class="cblk sm"><svg class="lic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg><h3>Пам’ять чатів</h3><ul><li>Кожна розмова зберігається</li><li>«Мої чати» — повернутись до будь-якої</li></ul></section>
   </div>
 </div></div>
+<div class="sheet" id="cliSheet" hidden><div id="cliBody"></div></div>
 <div class="sheet" id="exSheet" hidden><div style="overflow:auto">
   <div class="row between"><b id="exTitle" style="font-size:16px"></b><button class="ghost" id="exClose">Закрити</button></div>
   <div id="exBody" style="display:flex;flex-direction:column;gap:12px"></div>
@@ -570,7 +599,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-13.3';
+const APP_VER = '2026-11-13.4';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -623,7 +652,7 @@ function mmGate(mode){
       const w = await proxyCall({action:'register', name:f.name.value, email:f.email.value, phone:f.phone.value});
       if(w.status === 403) return mmGate('closed');
       if(w.status !== 200 || !w.data?.token) throw new Error(w.data?.error?.message || 'Не вдалося зареєструватися');
-      ls.set('hpuser', {token:w.data.token, name:w.data.name}); g.remove(); mmBar(); hideErr();
+      ls.set('hpuser', {token:w.data.token, name:w.data.name}); g.remove(); mmBar(); hideErr(); hpMe();
     }catch(ex){ err.textContent = ex.message || 'Немає з\'єднання. Спробуйте ще раз.'; btn.disabled = false; btn.textContent = 'Зареєструватися'; }
   };
 }
@@ -633,6 +662,7 @@ async function mmStart(){
   try{ const w = await proxyCall({action:'check', token:apiKey()});
     if(w.status === 403) mmGate('closed');
     else if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); }
+    else hpMe();
   }catch{}
 }
 setTimeout(mmStart, 0);
@@ -947,7 +977,7 @@ async function pdfPages(file){
 async function take(f){
   hideErr(); $('attRow').hidden=false; $('attRow').innerHTML='<span class="chip"><span class="spin"></span>Готую файл…</span>';
   try{
-    const file = {name:f.name, images:[], pdf:null, text:''};
+    const file = {name:f.name, images:[], pdf:null, text:'', raw:f};
     if(f.type.startsWith('image/')) file.images = [await b64(await shrink(f))];
     else if(f.type==='application/pdf' || /\.pdf$/i.test(f.name)){
       file.images = await Promise.all((await pdfPages(f)).map(b64));
@@ -968,7 +998,7 @@ function hideErr(){ $('err').hidden=true; }
 
 // ── MiniMax API (тест). Формат запитів — як у Claude, тому решта коду не змінюється ──
 function countUsage(i,o){ USAGE.in+=i||0; USAGE.out+=o||0; const usd = USAGE.in/1e6*0.15 + USAGE.out/1e6*0.60;
-  const el = document.getElementById('mmCost'); if(el) el.textContent = `MiniMax M3.1 Flash · за сесію: ${Math.round(USAGE.in/1000)}k вх / ${Math.round(USAGE.out/1000)}k вих токенів ≈ $${usd.toFixed(4)} (${(usd*S.usd).toFixed(2)} грн)`; }
+  const el = document.getElementById('mmCost'); if(el && !S.me) el.textContent = `MiniMax M3.1 Flash · за сесію: ${Math.round(USAGE.in/1000)}k вх / ${Math.round(USAGE.out/1000)}k вих токенів ≈ $${usd.toFixed(4)} (${(usd*S.usd).toFixed(2)} грн)`; }
 async function post(url, headers, body){
   let res; try{ res = await fetch(url, {method:'POST', headers, body:JSON.stringify(body)}); }
   catch(e){ throw new Error(provider()==='minimax' ? 'Браузер не зміг достукатись до api.minimax.io (ймовірно, MiniMax не дозволяє запити прямо з сайту). Спробуйте посилання з ключем OpenRouter (sk-or-…).' : 'Немає з\'єднання з OpenRouter.'); }
@@ -1010,6 +1040,7 @@ async function claude(messages, extra = {}){
     let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), format:'openai', body})}); }
     catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
     const w = await res.json().catch(() => ({})); d = w.data || {};
+    if(d._usage) countUsage(d._usage.in, d._usage.out);
     if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
     if(w.status === 403){ mmGate('closed'); throw new Error('Доступ закрито. Зверніться до адміністратора.'); }
     if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
@@ -1017,7 +1048,7 @@ async function claude(messages, extra = {}){
   } else {
     d = await post(MM.openrouter.url, { 'content-type':'application/json', 'authorization':'Bearer '+apiKey(), 'HTTP-Referer':location.origin, 'X-Title':'Hotpoint.ai test' }, body);
   }
-  countUsage(d.usage?.prompt_tokens, d.usage?.completion_tokens);
+  if(!viaProxy) countUsage(d.usage?.prompt_tokens, d.usage?.completion_tokens);
   const ch = d.choices?.[0] || {}, msg = ch.message || {};
   if(ch.finish_reason === 'length' && !msg.tool_calls) console.warn('MiniMax: відповідь обрізана по ліміту токенів');
   const content = [];
@@ -1067,6 +1098,7 @@ async function send(){
   const text = $('txt').value.trim(), file = S.file;
   if(!text && !file) return;
   if(!apiKey()) return showErr('Спершу зареєструйтесь (оновіть сторінку).');
+  if(isClient() && !S.ctx.object){ showErr('Спершу оберіть або створіть об’єкт — так менеджер побачить ваш запит.'); openClients(); return; }
   if(!S.cat.length || !S.mx){ showErr('Чекаю на прайс…'); await S.catPromise; hideErr(); if(!S.cat.length) return showErr('Прайс не завантажився. Оновіть сторінку.'); }
   $('txt').value=''; grow(); S.file=null; renderAtt();
   $('hero').hidden=true; $('cards').hidden=true;
@@ -1076,6 +1108,8 @@ async function send(){
   try{ if(S.mode==='pick') await pick(file, wait); else await calc(text, file, wait); }
   catch(e){ wait.typing=null; wait.text='Щось пішло не так: '+(e.message||e); render(); save(); }
   finally{ S.busy=false; $('send').disabled=false; }
+  try{ await hpAfterSend(file, wait); }catch{}
+  hpUsage();
 }
 $('send').onclick = send;
 
@@ -1096,7 +1130,7 @@ PUSH: RAFTEC → REHAU (тільки RAUTITAN). Труба PUSH RAFTEC — PEX-A
 Заборонено: AlcaPlast, Imprese, Qtap, Lidz, PEARL, Globus Lux, Kroner.
 ЗАВЖДИ: порядок розмірів трійника точний (25×16×25 ≠ 25×16×16); колір (червоний/синій) має збігатися; кут 45 ≠ 90; ВВ/РВ (внутр.) ≠ ЗВ/РЗ (зовн.); «з НГ»/накидна, антипротікання, для гіпсокартону, посилене, приладовий — тільки якщо майстер так написав.
 Ніколи: ЗРАЗОК, без штрихкоду, уцінка, брак, знято з виробництва, «НЕ ВОЗИМ»; (п/з) — останнім. Виняток — PUSH «(част)».
-СЛЕНГ: «Тр 32» = трійник; «НВ» = ВЗ; «ніпель 20×1/2» (PPR) = муфта PPR МРЗ; МРЗ/МРН = муфта різьб. зовн., МРВ = внутр., КРЗ/КРВ = коліно різьб.; «коліно уст./настінне/водорозетка/монтажка» = окреме настінне коліно РВ (не планка); планка — лише коли так і написано; «кліпса 25 (2)» = опора подвійна; «н.г» = накидна гайка; 5/4 = 1 1/4; 6/4 = 1 1/2; «фольга/фолія» = плівка 105 мкм; «лента пристінна/демпфер» = демпферна стрічка; «скоба такерна» = гарпун 42 мм; «водомір» = лічильник/витратомір; «зливна група» = кінцевий елемент 1" нікель RAFTEC; «лижі» = стінове кріплення радіатора; «головка» = термоголовка; «фільтр 3/4 сітчастий/косий» = фільтр груб. очистки BLACK RAFTEC; «уніпак малий» = паста 75 г; «колба 1/2 / 3/4» = колба Ecosoft 10" не прозора; «С22 500×1600» = радіатор сталевий тип 22 бокове, «VK/низ» = нижнє, висота «50» = 500; «кран подачі кут / звор кут» = клапан радіаторний кутовий подача / відсічний; «насосна група» = RAFTEC RPMGTB05; «колба для конденсату» = нейтралізатор Atlas NEUTRAL MINI; клей-піна без уточнення = Budmonster Mega 860 мл; інсталяція без бренду = Geberit Duofix + кнопка; хомути — ECO першим; труба ТП ф16 без уточнення — PEX-A RED.
+СЛЕНГ: «Тр 32» = трійник; «НВ» = ВЗ; «ніпель 20×1/2» (PPR) = муфта PPR МРЗ; МРЗ/МРН = муфта різьб. зовн., МРВ = внутр., КРЗ/КРВ = коліно різьб.; «коліно уст./настінне/водорозетка/монтажка» = окреме настінне коліно РВ (не планка); планка — лише коли так і написано; «кліпса 25 (2)» = опора подвійна; «н.г» = накидна гайка; 5/4 = 1 1/4; 6/4 = 1 1/2; «фольга/фолія» = плівка 105 мкм; «лента пристінна/демпфер» = демпферна стрічка; «скоба такерна» = гарпун 42 мм; «водомір» = лічильник/витратомір; «зливна група» = кінцевий елемент 1" нікель RAFTEC; «лижі» = стінове кріплення радіатора; «головка» = термоголовка; «інсерт» = вентильна (клапанна) вставка під термоголовку — ЛИШЕ для радіатора з нижнім підключенням (VK, «низ»); радіатор з боковим підключенням (K, «бік») — замість вставки радіаторний термостатичний кран (клапан) під термоголовку, вставку не брати; вставка до радіатора не входить, якщо майстер не написав інакше; «фільтр 3/4 сітчастий/косий» = фільтр груб. очистки BLACK RAFTEC; «уніпак малий» = паста 75 г; «колба 1/2 / 3/4» = колба Ecosoft 10" не прозора; «С22 500×1600» = радіатор сталевий тип 22 бокове, «VK/низ» = нижнє, висота «50» = 500; «кран подачі кут / звор кут» = клапан радіаторний кутовий подача / відсічний; «насосна група» = RAFTEC RPMGTB05; «колба для конденсату» = нейтралізатор Atlas NEUTRAL MINI; клей-піна без уточнення = Budmonster Mega 860 мл; інсталяція без бренду = Geberit Duofix + кнопка; хомути — ECO першим; труба ТП ф16 без уточнення — PEX-A RED.
 СИСТЕМА ЗА ПАРАМЕТРАМИ: 2 параметри (25×3/4) — муфта/коліно з різьбою; 3 параметри (20×16×20) — трійник; ф16 у водопроводі — швидше PUSH; «пайка X» — уся розводка PPR бренду X, ніякого PUSH; «гільзи» в замовленні — система PUSH.
 ПОХІДНІ: гільзи PUSH — трійник 3, коліно/муфта 2, різьбові й настінні 1, заглушка 1 (якщо майстер не розписав гільзи); «+ізол» — утеплювач PLM (16→18, 20→22, 25→28, 32→35), опалення/ГВ червоний, ХВ синій.`;
 const PICK_RULES = `ПРАВИЛА ПІДБОРУ (як досвідчений менеджер «Гарячої Точки»):
@@ -1234,7 +1268,7 @@ ${KB}
     const needs = (draft.items||[]).slice(0,400);
     if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
     const brands = (draft.brands||[]).filter(b => typeof b==='string' && b.trim()).slice(0,4);
-    const prefs = [draft.prefs, said.length < 600 ? said : ''].filter(Boolean).join(' | ');
+    const prefs = [hpPrefs(), draft.prefs, said.length < 600 ? said : ''].filter(Boolean).join(' | ');
     const ctx = draft.title || '';
     const byCode = new Map(S.cat.map(x=>[x[0],x])), picks = new Map();
     const fix = c => c && byCode.get(String(c).replace(/\D/g,'').padStart(11,'0'));
@@ -1303,6 +1337,7 @@ ${KB}
       for(const [d,q] of Object.entries(cnt)){ const it = byCode.get(SLV[d]); if(!it) continue;
         items.push({ code:it[0], art:it[1], name:it[2], qty:q, unit:it[3], match:'exact', category:'rough_plumbing', price:Math.round(uah(it)*100)/100, note:'Похідна: гільзи до фітингів PUSH' }); }
     }
+    try{ hpAfterPick(items, needs, r1); }catch(e){ console.warn('rules', e); }
     try{ cabFix(items, needs, S.mode === 'project'); }catch(e){ console.warn('cabFix', e); }
     const miss = items.filter(i=>i.code==='—').length, an = items.filter(i=>i.match==='analog').length;
     wait.typing=null;
@@ -1318,7 +1353,7 @@ async function pick(file, wait){
     { name:'search_matrix', description:'Пошук в асортиментній матриці чистової (пріоритет продажу A→D, колір, форма, розміри, монтаж, сегмент, посилання на сайт/B2B виробника). Повертає: код | назва | бренд | пріоритет | колір | форма | монтаж | Ш×Г×В | сегмент | ціна | посилання | інше.',
       input_schema:{type:'object', properties:{type:{type:'string', enum:MX_TABS}, query:{type:'string', description:'слова: стиль, матеріал, особливості, бренд'}, color:{type:'string'}, shape:{type:'string'}, max_width:{type:'number'}, min_width:{type:'number'}}, required:['type']} }];
   const msgs = hist();
-  msgs[0].content = `${RULES}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + max_width) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
+  msgs[0].content = `${RULES}\n${hpPrefs()}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + max_width) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
   const last = msgs[msgs.length-1];
   last.content = [...fileBlocks(file), {type:'text', text: last.content + (file?.text?`\n\nВміст файлу ${file.name}:\n${file.text.slice(0,20000)}`:'')}];
   const base = msgs.length;
@@ -1521,6 +1556,262 @@ $('capsBtn').onclick = () => {
     x0=null;
   }, {passive:true});
 })();
+
+// ══ КЛІЄНТИ · ОБ'ЄКТИ · РОЗРАХУНКИ (етап 1) ══
+// Дані — у Google Таблиці й на Диску через проксі. Ролі: директор (усі), менеджер (свої), клієнт (лише своє).
+const API = async (action, data = {}) => {
+  const w = await proxyCall({ token: apiKey(), action, ...data });
+  if(w.status === 401){ try{ localStorage.removeItem('hpuser'); }catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
+  if(w.status === 403 && /закрито/i.test(w.data?.error?.message||'')) { mmGate('closed'); }
+  if(w.status !== 200) throw new Error(w.data?.error?.message || `помилка ${w.status}`);
+  return w.data;
+};
+S.me = null; S.ctx = { client:null, object:null, rules:[] };
+const isClient = () => S.me?.role === 'клієнт';
+const isStaff = () => S.me && !isClient();
+const roleLbl = r => r === 'директор' ? 'Директор' : r === 'клієнт' ? 'Клієнт' : 'Менеджер';
+const dt = t => t ? new Date(t).toLocaleString('uk-UA', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+const STATUS = { 'чернетка':['Чернетка',''], 'на перевірці':['На перевірці','wait'], 'підтверджено':['✓ Перевірено','ok'] };
+const stBadge = s => { const x = STATUS[s] || [s||'', '']; return `<span class="st ${x[1]}">${esc(x[0])}</span>`; };
+
+// ── Хто я ──
+async function hpMe(){
+  try{ S.me = await API('me'); }catch{ return; }
+  const u = ls.get('hpuser') || {}; ls.set('hpuser', { ...u, role:S.me.role, name:S.me.name });
+  document.body.classList.toggle('roleClient', isClient());
+  $('cliBtn').hidden = false; $('cliBtnT').textContent = isClient() ? 'Мої об’єкти' : 'Клієнти';
+  if(isClient() && S.me.client) S.ctx.client = S.me.client;
+  ctxRender(); hpUsage(); hpInbox();
+}
+// ── Витрати: рахує сервер, кожен виклик (і невдалий теж) ──
+async function hpUsage(){
+  const bar = $('mmCost'); if(!bar) return;
+  if(isClient()){ bar.hidden = true; return; }
+  try{ const u = await API('usage'), g = x => `${x.calls} запит. · $${x.usd.toFixed(3)} (${(x.usd*S.usd).toFixed(0)} грн)`;
+    bar.textContent = `MiniMax · Ви сьогодні: ${g(u.today)} · місяць: ${g(u.month)}` + (u.allToday ? ` · усі сьогодні: ${g(u.allToday)}` : '');
+    bar.title = `Сесія: ${Math.round(USAGE.in/1000)}k вх / ${Math.round(USAGE.out/1000)}k вих токенів (з міркуваннями)`;
+  }catch{}
+}
+async function hpInbox(){
+  if(!isStaff()) return;
+  try{ const r = await API('inbox'); S.inbox = r.calcs || []; $('cliBadge').textContent = S.inbox.length || ''; $('cliBadge').hidden = !S.inbox.length; }catch{}
+}
+
+// ── Рядок контексту над полем вводу ──
+function ctxRender(){
+  const b = $('ctxBar'); if(!S.me){ b.hidden = true; return; }
+  b.hidden = false; const c = S.ctx.client, o = S.ctx.object;
+  b.innerHTML = isClient()
+    ? `<button class="ctxb" data-open>${o ? `Об’єкт: <b>${esc(o.name)}</b>` : 'Оберіть або створіть об’єкт'} ▾</button><span class="small">Результат перевірить менеджер</span>`
+    : c ? `<button class="ctxb" data-open>Клієнт: <b>${esc(c.name)}</b>${o ? ` · Об’єкт: <b>${esc(o.name)}</b>` : ' · <i>оберіть об’єкт</i>'} ▾</button>${c.prefs ? `<span class="small" title="${esc(c.prefs)}">Вподобання враховуються</span>` : ''}<button class="ghost small" data-clear>✕</button>`
+    : `<button class="ctxb" data-open>Без клієнта — обрати клієнта ▾</button><span class="small">Щоб розрахунок зберігся в папку клієнта</span>`;
+  b.querySelector('[data-open]').onclick = () => openClients(c && c.id);
+  const x = b.querySelector('[data-clear]'); if(x) x.onclick = () => { S.ctx = { client:null, object:null, rules:[] }; ctxRender(); };
+}
+function setCtx(client, object, rules){ S.ctx = { client, object, rules: rules || S.ctx.rules || [] }; ctxRender(); }
+
+// ── Вікно «Клієнти» ──
+function cliSheet(html){ $('cliBody').innerHTML = html; $('cliSheet').hidden = false; return $('cliBody'); }
+async function openClients(cid){
+  if(isClient()) return openClient(S.ctx.client?.id || S.me.client?.id);
+  if(cid) return openClient(cid);
+  const box = cliSheet('<div class="small">Завантажую клієнтів…</div>');
+  let list = []; try{ list = (await API('clients')).clients; }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  await hpInbox();
+  const inbox = (S.inbox||[]).length ? `<div class="cgrp"><b>Нові від клієнтів · ${S.inbox.length}</b>${S.inbox.map(k => `<div class="citem" data-calc="${k.id}"><div class="ct"><b>${esc(k.client)} — ${esc(k.title)}</b><span>${dt(k.updated)} · ${k.items} поз.</span></div>${stBadge(k.status)}</div>`).join('')}</div>` : '';
+  box.innerHTML = `<div class="row between"><b style="font-size:16px">Клієнти</b><button class="ghost" data-close>Закрити</button></div>${inbox}
+    <div class="row"><input type="search" id="cliQ" placeholder="Пошук: ПІБ або телефон" style="flex:1"><button class="btn" data-new>+ Новий клієнт</button></div>
+    <div class="clist" id="cliList"></div>`;
+  const draw = q => { const n = String(q||'').toLowerCase().replace(/\s/g,''), dg = n.replace(/\D/g,'');
+    const f = list.filter(c => !n || c.name.toLowerCase().replace(/\s/g,'').includes(n) || (dg.length >= 3 && c.phone.replace(/\D/g,'').includes(dg)))
+      .sort((a,b) => (b.pending - a.pending) || (b.updated - a.updated) || a.name.localeCompare(b.name));
+    $('cliList').innerHTML = f.length ? f.map(c => `<div class="citem" data-id="${c.id}"><div class="ct"><b>${esc(c.name)}</b><span>${esc(c.phone)} · розрахунків ${c.calcs}${c.updated ? ' · ' + dt(c.updated) : ''}${S.me.role==='директор' && c.manager ? ' · ' + esc(c.manager) : ''}${!c.manager ? ' · нерозподілений' : ''}</span></div>${c.pending ? `<span class="st wait">${c.pending} нов.</span>` : ''}</div>`).join('')
+      : '<div class="small">Нікого не знайдено. Додайте нового клієнта.</div>';
+    $('cliList').querySelectorAll('[data-id]').forEach(d => d.onclick = () => openClient(d.dataset.id)); };
+  draw(''); $('cliQ').oninput = e => draw(e.target.value);
+  box.querySelectorAll('[data-calc]').forEach(d => d.onclick = () => openCalc(d.dataset.calc));
+  box.querySelector('[data-new]').onclick = () => clientForm({}, $('cliQ').value);
+  box.querySelector('[data-close]').onclick = () => $('cliSheet').hidden = true;
+}
+function clientForm(c, q){
+  const dg = /\d{5,}/.test(q||'') ? q : '', nm = dg ? '' : (q||'');
+  const box = cliSheet(`<div class="row between"><b style="font-size:16px">${c.id ? 'Картка клієнта' : 'Новий клієнт'}</b><button class="ghost" data-back>Назад</button></div>
+    <form id="cliF" class="cform">
+      <label>ПІБ або назва фірми<input name="name" required value="${esc(c.name||nm)}"></label>
+      <label>Телефон (за ним клієнт сам побачить свої об’єкти)<input name="phone" type="tel" placeholder="+380…" value="${esc(c.phone||dg)}"></label>
+      <label>Код у КУП<input name="kup" value="${esc(c.kup||'')}"></label>
+      <label>Вподобання (ШІ застосовує до кожного підбору)<textarea name="prefs" rows="3" placeholder="напр.: PUSH — тільки RAFTEC; крани PLM; пайка Ekoplastik; чистова Venta">${esc(c.prefs||'')}</textarea></label>
+      <label class="chk"><input type="checkbox" name="can_edit" ${c.can_edit?'checked':''}> Клієнт може сам редагувати таблицю</label>
+      <div class="err" id="cliErr" hidden></div>
+      <button class="btn">${c.id ? 'Зберегти' : 'Створити клієнта'}</button>
+    </form>`);
+  box.querySelector('[data-back]').onclick = () => c.id ? openClient(c.id) : openClients();
+  $('cliF').onsubmit = async e => { e.preventDefault(); const f = e.target, btn = f.querySelector('.btn'); btn.disabled = true; btn.textContent = 'Зберігаю…';
+    try{ const r = await API('client_save', { client:{ id:c.id, name:f.name.value, phone:f.phone.value, kup:f.kup.value, prefs:f.prefs.value, can_edit:f.can_edit.checked } });
+      if(S.ctx.client?.id === r.client.id) setCtx(r.client, S.ctx.object);
+      openClient(r.client.id);
+    }catch(ex){ $('cliErr').textContent = ex.message; $('cliErr').hidden = false; btn.disabled = false; btn.textContent = 'Зберегти'; } };
+}
+async function openClient(cid){
+  const box = cliSheet('<div class="small">Завантажую…</div>');
+  let r; try{ r = await API('objects', { client_id: cid || '' }); }catch(e){ box.innerHTML = `<div class="row between"><span class="err">${esc(e.message)}</span><button class="ghost" data-close>Закрити</button></div>`; box.querySelector('[data-close]').onclick = () => $('cliSheet').hidden = true; return; }
+  const c = r.client; if(isClient()) S.ctx.client = c;
+  const objs = r.objects.sort((a,b) => (b.calcs[0]?.updated||+new Date(b.created)) - (a.calcs[0]?.updated||+new Date(a.created)));
+  box.innerHTML = `<div class="row between"><b style="font-size:16px">${isClient() ? 'Мої об’єкти' : esc(c.name)}</b><span class="row">${isStaff() ? '<button class="ghost" data-list>← Усі клієнти</button>' : ''}<button class="ghost" data-close>Закрити</button></span></div>
+    ${isStaff() ? `<div class="ccard"><div class="small">${esc(c.phone)}${c.kup ? ' · КУП ' + esc(c.kup) : ''} · ${c.linked ? 'клієнт має доступ до посилання' : 'клієнт ще не заходив'}${c.can_edit ? ' · може редагувати' : ''}</div>
+      ${c.prefs ? `<div><b>Вподобання:</b> ${esc(c.prefs)}</div>` : '<div class="small">Вподобань ще не вписано.</div>'}
+      ${r.rules.length ? `<details><summary>Запам’ятовані заміни · ${r.rules.length}</summary>${r.rules.map((x,i) => `<div class="rule"><div style="flex:1"><b>${esc(x.need)}</b><div class="note">→ ${esc(x.code)} ${esc(x.name)}</div></div><button class="x" data-rdel="${i}" aria-label="Видалити">✕</button></div>`).join('')}</details>` : ''}
+      <div class="row"><button data-edit>Редагувати картку</button>${c.folder ? `<a class="small" href="https://drive.google.com/drive/folders/${c.folder}" target="_blank" rel="noopener">Папка на Диску ↗</a>` : ''}</div></div>` : ''}
+    <div class="row between"><b>Об’єкти</b><button class="btn" data-newobj>+ Новий об’єкт</button></div>
+    <div class="clist">${objs.length ? objs.map(o => `<div class="obj"><div class="row between"><div><b>${esc(o.name)}</b>${o.address ? ` <span class="small">${esc(o.address)}</span>` : ''}</div><button class="btn sm" data-use="${o.id}">${S.ctx.object?.id === o.id ? '✓ Обрано' : 'Працювати тут'}</button></div>
+      ${o.calcs.length ? o.calcs.map(k => `<div class="citem" data-calc="${k.id}"><div class="ct"><b>${esc(k.title)}</b><span>${dt(k.updated)} · ${k.items} поз. · ${fmt(k.sum)} грн · v${k.version}</span></div>${stBadge(k.status)}</div>`).join('') : '<div class="small">Розрахунків ще немає.</div>'}
+      ${isStaff() && o.folder ? `<a class="small" href="https://drive.google.com/drive/folders/${o.folder}" target="_blank" rel="noopener">Файли об’єкта ↗</a>` : ''}</div>`).join('') : '<div class="small">Створіть перший об’єкт — у нього збиратимуться файли й розрахунки.</div>'}</div>`;
+  const q = s => box.querySelector(s);
+  q('[data-close]').onclick = () => $('cliSheet').hidden = true;
+  if(q('[data-list]')) q('[data-list]').onclick = () => openClients();
+  if(q('[data-edit]')) q('[data-edit]').onclick = () => clientForm(c);
+  box.querySelectorAll('[data-rdel]').forEach(b => b.onclick = async () => { const x = r.rules[+b.dataset.rdel]; b.disabled = true;
+    try{ await API('rule_del', { client_id:c.id, need:x.need, code:x.code }); openClient(c.id); }catch(e){ showErr(e.message); } });
+  q('[data-newobj]').onclick = () => objectForm(c);
+  box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => { const o = objs.find(x => x.id === b.dataset.use); setCtx(c, o, r.rules); $('cliSheet').hidden = true; newChat(); });
+  box.querySelectorAll('[data-calc]').forEach(d => d.onclick = () => openCalc(d.dataset.calc));
+}
+function objectForm(c){
+  const box = cliSheet(`<div class="row between"><b style="font-size:16px">Новий об’єкт</b><button class="ghost" data-back>Назад</button></div>
+    <form id="objF" class="cform"><label>Назва (напр. «Стрийська 12, кв. 40» або «Будинок Сокільники»)<input name="name" required></label>
+    <label>Адреса / примітка<input name="address"></label><div class="err" id="objErr" hidden></div><button class="btn">Створити і працювати тут</button></form>`);
+  box.querySelector('[data-back]').onclick = () => openClient(c.id);
+  $('objF').onsubmit = async e => { e.preventDefault(); const f = e.target, btn = f.querySelector('.btn'); btn.disabled = true; btn.textContent = 'Створюю папку…';
+    try{ const r = await API('object_save', { client_id:c.id, object:{ name:f.name.value, address:f.address.value } });
+      const full = await API('objects', { client_id:c.id }); setCtx(full.client, r.object, full.rules); $('cliSheet').hidden = true; newChat();
+    }catch(ex){ $('objErr').textContent = ex.message; $('objErr').hidden = false; btn.disabled = false; btn.textContent = 'Створити і працювати тут'; } };
+}
+async function openCalc(id){
+  const box = cliSheet('<div class="small">Відкриваю розрахунок…</div>');
+  try{ const r = await API('calc_get', { id }); const d = r.data || {};
+    S.ctx = { client:r.client, object:{ id:r.object.id, name:r.object.name }, rules:r.rules || [] }; ctxRender();
+    $('cliSheet').hidden = true; newChat(); if(d.mode) setMode(d.mode);
+    S.chat = [ { role:'me', text:d.request || '', att:d.fileName || '' }, { role:'ai', text:d.reply || '', res: d.res ? { ...d.res } : null, calcId:r.calc.id, status:r.calc.status, version:r.calc.version } ];
+    $('hero').hidden = true; $('cards').hidden = true; S._seen = 0; render(); save();
+  }catch(e){ box.innerHTML = `<div class="row between"><span class="err">${esc(e.message)}</span><button class="ghost" onclick="document.getElementById('cliSheet').hidden=true">Закрити</button></div>`; }
+}
+
+// ── Підбір: вподобання й запам’ятовані заміни клієнта ──
+const ruleTok = s => [...toks(String(s||''))].filter(k => k.length > 1);
+function ruleMatch(need){
+  const a = ruleTok(need); if(!a.length) return null; let best = null;
+  for(const r of S.ctx.rules || []){ const b = new Set(ruleTok(r.need)); if(!b.size) continue;
+    const inter = a.filter(k => b.has(k)).length, sc = inter / Math.max(a.length, b.size);
+    if(sc >= 0.6 && (!best || sc > best.sc)) best = { ...r, sc }; }
+  return best;
+}
+const _pinsFor = pinsFor;
+pinsFor = function(need){ const r = ruleMatch(need), it = r && (pinsFor.by || new Map(S.cat.map(x => [x[0], x]))).get(String(r.code).padStart(11,'0'));
+  return [...(it ? [it] : []), ..._pinsFor(need)]; };
+function hpAfterPick(items, needs, r1){
+  items.forEach((it, i) => { if(i >= needs.length) return; it.need = needs[i].need || ''; it.alts = (r1?.[i]?.cands || []).slice(0, 10).map(c => c[0]);
+    const r = ruleMatch(it.need); if(!r || r.sc < 0.8) return;
+    const c = S.cat.find(x => x[0] === String(r.code).padStart(11,'0')); if(!c || c[0] === it.code) return;
+    Object.assign(it, { code:c[0], art:c[1], name:c[2], unit:c[3], price:Math.round(uah(c)*100)/100, match:'exact', note:[it.note, 'заміна клієнта (запам’ятована)'].filter(Boolean).join(' · ') }); });
+}
+const hpPrefs = () => S.ctx.client?.prefs ? `ВПОДОБАННЯ КЛІЄНТА ${S.ctx.client.name}: ${S.ctx.client.prefs}` : '';
+
+// ── Збереження розрахунку в об’єкт ──
+async function hpUpload(file){
+  if(!file?.raw || !S.ctx.object) return null;
+  if(file.raw.size > 25e6) return null;
+  try{ const r = await API('file_upload', { object_id:S.ctx.object.id, name:file.raw.name, mime:file.raw.type, b64: await b64(file.raw) }); return r.file; }catch{ return null; }
+}
+async function hpSaveCalc(m, extra = {}){
+  if(!S.ctx.object || !m.res) return;
+  const req = S.chat[S.chat.indexOf(m) - 1] || {};
+  const data = { mode:S.mode, request:req.text || '', fileName:req.att || '', fileId:m.fileId || '', reply:m.text || '', res:{ ...m.res } };
+  try{ const r = await API('calc_save', { calc:{ id:m.calcId, object_id:S.ctx.object.id, title:m.res.title, mode:S.mode, status:extra.status, data } });
+    m.calcId = r.calc.id; m.status = r.calc.status; m.version = r.calc.version; save(); return r.calc;
+  }catch(e){ showErr('Не зберіглось у папку клієнта: ' + e.message); }
+}
+const saveSoon = (() => { const t = new Map(); return m => { clearTimeout(t.get(m)); t.set(m, setTimeout(() => hpSaveCalc(m).then(() => { const el = $('msgs').querySelector(`.msg[data-i="${S.chat.indexOf(m)}"] .saved`); if(el) el.textContent = `Збережено · v${m.version||1}`; }), 1200)); }; })();
+async function hpAfterSend(file, wait){
+  if(!S.ctx.object || !(wait.res || wait.text)) return;
+  if(file) wait.fileId = (await hpUpload(file))?.id || '';
+  if(wait.res){ await hpSaveCalc(wait); renderStream(wait); }
+  hpInbox();
+}
+
+// ── Таблиця результату: заміна, кількість, додати/видалити, «запам’ятати для клієнта» ──
+const canEdit = m => !isClient() || !!S.ctx.client?.can_edit;
+resEl = function(m){
+  const r = m.res, el = document.createElement('div'); el.className = 'res';
+  const edit = canEdit(m), staff = isStaff();
+  const rows = r.items.filter(i => i.category === r.tab), found = rows.filter(i => i.code !== '—');
+  const total = r.items.reduce((a,i) => a + i.price*i.qty, 0);
+  const banner = isClient() || m.status ? (m.status === 'підтверджено' ? '<div class="okb">✓ Перевірено менеджером — це точна відповідь «Гарячої Точки».</div>'
+    : isClient() ? '<div class="warnb"><b>Попередній підбір ШІ.</b> Менеджер «Гарячої Точки» перевірить і надасть точну відповідь.</div>' : '') : '';
+  el.innerHTML = `${banner}<div class="row between"><h4>${esc(r.title)}</h4><span class="small">Разом: <span class="sum">${fmt(total)} грн</span> · роздрібні ціни</span></div>
+    <div class="row tabs"></div>
+    <div class="tbox"><table class="spec"><thead><tr><th>№</th><th>Код</th><th>Артикул</th><th>Найменування</th><th>К-сть</th><th>Од.</th><th style="text-align:right">Ціна</th><th style="text-align:right">Сума</th>${edit ? '<th></th>' : ''}</tr></thead><tbody></tbody></table></div>
+    ${edit ? '<div class="row"><button data-add>+ Додати рядок</button></div>' : ''}
+    <div class="row"><button class="btn" data-c="t2">Код + к-сть (1С)</button><button data-c="t1">Назва + к-сть</button><button data-c="t3">Вся таблиця</button><button data-x>Excel</button><span class="small">Розділ: <span class="sum">${fmt(rows.reduce((a,i)=>a+i.price*i.qty,0))} грн</span></span></div>
+    ${S.ctx.object ? `<div class="row between"><span class="small saved">${m.calcId ? `Збережено в «${esc(S.ctx.object.name)}» · v${m.version||1}` : 'Ще не збережено'}</span>${staff && m.calcId && m.status !== 'підтверджено' ? '<button class="btn" data-ok>Підтвердити для клієнта</button>' : ''}</div>` : (staff ? '<div class="small">Оберіть клієнта й об’єкт над полем вводу — і розрахунок збережеться в його папку.</div>' : '')}`;
+  for(const [c,l] of CATS){ const n = r.items.filter(i => i.category === c).length; if(!n) continue;
+    const b = document.createElement('button'); b.className = r.tab === c ? 'on' : ''; b.textContent = `${l} · ${n}`; b.onclick = () => { r.tab = c; save(); el.replaceWith(resEl(m)); }; el.querySelector('.tabs').appendChild(b); }
+  const changed = () => { save(); if(m.calcId || S.ctx.object) saveSoon(m); el.replaceWith(resEl(m)); };
+  const tb = el.querySelector('tbody');
+  rows.forEach((it, k) => {
+    const tr = document.createElement('tr'); if(it.code === '—') tr.className = 'miss'; else if(it.match === 'analog') tr.className = 'an';
+    tr.innerHTML = `<td class="small">${k+1}</td><td class="code">${esc(it.code)}</td><td class="art">${esc(it.art||'—')}</td><td><div class="nm">${esc(it.name)}</div>${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}${edit ? '<button class="swap">Замінити</button>' : ''}</td><td>${edit ? `<input type="number" min="0" step="any" value="${it.qty}" aria-label="Кількість">` : it.qty}</td><td class="small">${esc(it.unit)}</td><td class="num">${it.price ? fmt(it.price) : '—'}</td><td class="num">${it.price ? fmt(it.price*it.qty) : '—'}</td>${edit ? '<td><button class="x" aria-label="Видалити">✕</button></td>' : ''}`;
+    if(edit){
+      tr.querySelector('input').onchange = e => { it.qty = Number(e.target.value) || 0; changed(); };
+      tr.querySelector('.x').onclick = () => { r.items.splice(r.items.indexOf(it), 1); changed(); };
+      tr.querySelector('.swap').onclick = () => swapPanel(tr, it, m, changed);
+    }
+    tb.appendChild(tr);
+  });
+  if(edit) el.querySelector('[data-add]').onclick = () => { const it = { code:'—', art:'', name:'Новий рядок', qty:1, unit:'шт', match:'none', category:r.tab, price:0, note:'', need:'' };
+    const tr = document.createElement('tr'); tr.innerHTML = '<td colspan="9"></td>'; tb.appendChild(tr); swapPanel(tr, it, m, () => { r.items.push(it); changed(); }, true); };
+  if(r.checklist?.length){ const det = document.createElement('details');
+    det.innerHTML = `<summary>Перевірка за правилами майстра: ${r.checklist.filter(c=>c.passed).length} з ${r.checklist.length}</summary>` + r.checklist.map(c => `<div class="rule"><span class="${c.passed?'ok':'bad'}">${c.passed?'✓':'!'}</span><div><b>${esc(c.rule)}</b><div class="note">${esc(c.comment)}</div></div></div>`).join('');
+    el.appendChild(det); }
+  el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
+    if(!found.length) return; const k = b.dataset.c;
+    const text = found.map(i => k==='t1' ? `${i.name}\t${i.qty}` : k==='t2' ? `${i.code}\t\t\t${i.qty}` : `${i.code}\t${i.art}\t${i.name}\t${i.qty}`).join('\n');
+    const old = b.textContent; navigator.clipboard.writeText(text).then(() => { b.textContent = 'Скопійовано ✓'; setTimeout(() => b.textContent = old, 1800); }).catch(() => showErr('Браузер не дав скопіювати. Виділіть рядки в таблиці вручну.'));
+  });
+  el.querySelector('[data-x]').onclick = () => excel(r);
+  const ok = el.querySelector('[data-ok]'); if(ok) ok.onclick = async () => { ok.disabled = true; ok.textContent = 'Підтверджую…'; await hpSaveCalc(m, { status:'підтверджено' }); hpInbox(); el.replaceWith(resEl(m)); };
+  return el;
+};
+function swapPanel(tr, it, m, done, adding){
+  const old = tr.parentNode.querySelector('.swaprow'); if(old) old.remove();
+  const row = document.createElement('tr'); row.className = 'swaprow';
+  const byCode = new Map(S.cat.map(x => [x[0], x]));
+  const alts = (it.alts || []).map(c => byCode.get(c)).filter(c => c && c[0] !== it.code);
+  const canRule = isStaff() && S.ctx.client && !adding;
+  row.innerHTML = `<td colspan="9"><div class="swapbox"><div class="row"><input type="search" placeholder="Пошук у прайсі: тип, розмір, бренд, код" style="flex:1" value="${adding ? '' : esc(it.need || '')}"><button class="ghost" data-cancel>Скасувати</button></div>
+    ${canRule ? `<label class="chk small"><input type="checkbox" data-rule> Запам’ятати для клієнта ${esc(S.ctx.client.name)}: «${esc((it.need||it.name).slice(0,60))}» → новий код</label>` : ''}
+    <div class="opts"></div></div></td>`;
+  if(adding) tr.replaceWith(row); else tr.after(row);
+  const list = row.querySelector('.opts'), inp = row.querySelector('input[type=search]');
+  const opt = c => `<button class="opt" data-code="${c[0]}"><span class="c">${c[0]}</span> ${esc(c[2])}${mxTag(c) ? ` <span class="small">${esc(mxTag(c).replace(/^ \| /,''))}</span>` : ''} <b>${fmt(uah(c))} грн</b></button>`;
+  const draw = q => { const res = q ? search(q, 12) : []; const seen = new Set();
+    const all = [...(q ? [] : alts), ...res].filter(c => !seen.has(c[0]) && seen.add(c[0]));
+    list.innerHTML = (!q && alts.length ? '<div class="small">Альтернативи з підбору:</div>' : '') + (all.length ? all.map(opt).join('') : '<div class="small">Напишіть, що шукаєте.</div>');
+    list.querySelectorAll('.opt').forEach(b => b.onclick = async () => { const c = byCode.get(b.dataset.code); const from = it.code;
+      Object.assign(it, { code:c[0], art:c[1], name:c[2], unit:c[3], price:Math.round(uah(c)*100)/100, match:'exact', note: adding ? 'додано вручну' : 'замінено менеджером' });
+      if(isClient()) it.note = adding ? 'додано клієнтом' : 'замінено клієнтом';
+      const rem = row.querySelector('[data-rule]')?.checked;
+      if(rem){ try{ const r = await API('rule_add', { client_id:S.ctx.client.id, need:it.need || it.name, from, code:c[0], name:c[2] }); S.ctx.rules = r.rules; it.note += ' · запам’ятано для клієнта'; }catch(e){ showErr(e.message); } }
+      done(); }); };
+  let tm; inp.oninput = () => { clearTimeout(tm); tm = setTimeout(() => draw(inp.value.trim()), 200); };
+  draw(adding ? '' : ''); if(!alts.length && !adding) draw(inp.value.trim());
+  row.querySelector('[data-cancel]').onclick = () => row.remove();
+  inp.focus();
+}
+
+// ── Кнопка в шапці ──
+$('cliBtn').onclick = () => { startWork(); openClients(S.ctx.client?.id); };
+$('cliSheet').addEventListener('click', e => { if(e.target === $('cliSheet')) $('cliSheet').hidden = true; });
+setInterval(() => { if(document.visibilityState === 'visible') hpInbox(); }, 120000);
 
 // ── Старт ──
 (function(){
