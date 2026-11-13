@@ -491,6 +491,21 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
 .cbadge{background:var(--brand);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:2px}
 body.roleClient #mmCost{display:none}
 body:has(.sheet:not([hidden])) #mmCost{display:none}
+
+/* ── Вхід / анкета / звіт ── */
+.gate{position:fixed;inset:0;z-index:1000;background:rgba(20,20,20,.55);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.gbox{background:var(--surface);max-width:440px;width:100%;padding:22px;display:flex;flex-direction:column;gap:10px;border-top:3px solid var(--brand);max-height:92vh;overflow:auto}
+.gbox h2{margin:0;font-size:21px}
+.gbox label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.gbox input:not([type=checkbox]),.gbox select{font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--line);background:var(--sunk);color:var(--fg);border-radius:4px}
+#regMore{display:flex;flex-direction:column;gap:10px} #regMore[hidden]{display:none}
+.lbl{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.gbox .chip2{flex-direction:row;align-items:center;gap:6px;border:1px solid var(--line);padding:5px 10px;border-radius:999px;font-size:12.5px;color:var(--fg);cursor:pointer}
+.chip2:has(input:checked){background:var(--tint);border-color:var(--brand);color:var(--brand-ink)}
+.survey{display:flex;flex-direction:column;gap:9px;border:1px solid var(--line);padding:10px;border-radius:4px}
+.survey summary{cursor:pointer;font-weight:700;color:var(--brand-ink);font-size:13.5px}
+button.sm{font-size:12px;padding:5px 10px}
 </style>
 </head>
 <body>
@@ -505,6 +520,7 @@ body:has(.sheet:not([hidden])) #mmCost{display:none}
   <div class="obar gut"><div class="in">
     <button class="obtn" id="sideBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Мої чати</button>
     <button class="obtn" id="cliBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.5 3 5.2"/></svg><span id="cliBtnT">Клієнти</span><span class="cbadge" id="cliBadge" hidden></span></button>
+    <button class="obtn" id="repBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Звіт</button>
     <span class="otitle"></span>
     <button class="obtn ghostw" id="capsBtn">Можливості</button>
     <button class="obtn ghostw" id="newBtn" hidden>+ Новий чат</button>
@@ -600,7 +616,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-13.6';
+const APP_VER = '2026-11-13.7';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -1352,9 +1368,9 @@ async function pick(file, wait){
   const tools = [{ name:'search_catalog', description:'Пошук товарів у прайсі «Гарячої Точки». Повертає до 15 позицій: код | артикул | назва | од. | ціна грн. Шукай короткими запитами: тип + характеристика + бренд.',
     input_schema:{type:'object', properties:{query:{type:'string'}}, required:['query']} },
     { name:'search_matrix', description:'Пошук в асортиментній матриці чистової (пріоритет продажу A→D, колір, форма, розміри, монтаж, сегмент, посилання на сайт/B2B виробника). Повертає: код | назва | бренд | пріоритет | колір | форма | монтаж | Ш×Г×В | сегмент | ціна | посилання | інше.',
-      input_schema:{type:'object', properties:{type:{type:'string', enum:MX_TABS}, query:{type:'string', description:'слова: стиль, матеріал, особливості, бренд'}, color:{type:'string'}, shape:{type:'string'}, max_width:{type:'number'}, min_width:{type:'number'}}, required:['type']} }];
+      input_schema:{type:'object', properties:{type:{type:'string', enum:MX_TABS}, query:{type:'string', description:'слова: стиль, матеріал, особливості, бренд'}, color:{type:'string'}, shape:{type:'string'}, max_width:{type:'number'}, min_width:{type:'number'}, mount:{type:'string', description:'вид монтажу: накладний (на стільницю), врізний, меблевий, підвісний, підлоговий, настінний, прихований'}}, required:['type']} }];
   const msgs = hist();
-  msgs[0].content = `${RULES}\n${hpPrefs()}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + max_width) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
+  msgs[0].content = `${RULES}\n${hpPrefs()}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + mount + max_width; вид монтажу — обов'язково: накладна раковина ≠ меблева ≠ врізна) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
   const last = msgs[msgs.length-1];
   last.content = [...fileBlocks(file), {type:'text', text: last.content + (file?.text?`\n\nВміст файлу ${file.name}:\n${file.text.slice(0,20000)}`:'')}];
   const base = msgs.length;
@@ -1823,6 +1839,196 @@ function swapPanel(tr, it, m, done, adding){
 $('cliBtn').onclick = () => { startWork(); openClients(S.ctx.client?.id); };
 $('cliSheet').addEventListener('click', e => { if(e.target === $('cliSheet')) $('cliSheet').hidden = true; });
 setInterval(() => { if(document.visibilityState === 'visible') hpInbox(); }, 120000);
+
+// ══ ЕТАП 2: швидкість, реєстрація з анкетою, монтаж у чистовій, звіт, КУП, залишки (заготовка), Telegram (заготовка) ══
+const qs = new URLSearchParams(location.search);
+(() => { const m = (qs.get('m') || '').toLowerCase().replace(/[^a-z0-9_-]/g, ''); if(m) ls.set('hpcard', m); })();
+const hpCard = () => ls.get('hpcard') || '';
+
+// ── 1. Швидкість: один запит на старт + кеш у браузері + «розігрів» проксі ──
+hpMe = async function(){
+  const cached = ls.get('hpboot'); if(cached?.me) applyBoot(cached, true);
+  let b; try{ b = await API('bootstrap'); }catch{ return; }
+  ls.set('hpboot', { ...b, at:Date.now() }); applyBoot(b, false);
+};
+function applyBoot(b, fromCache){
+  S.me = b.me; const u = ls.get('hpuser') || {}; if(!fromCache) ls.set('hpuser', { ...u, role:S.me.role, name:S.me.name });
+  document.body.classList.toggle('roleClient', isClient()); document.body.classList.toggle('roleDir', S.me.role === 'директор');
+  $('cliBtn').hidden = false; $('cliBtnT').textContent = isClient() ? 'Мої об’єкти' : 'Клієнти'; $('repBtn').hidden = S.me.role !== 'директор';
+  if(isClient() && S.me.client) S.ctx.client = { ...S.me.client, ...(S.ctx.client || {}) };
+  if(b.clients) S.clients = b.clients;
+  if(b.inbox){ S.inbox = b.inbox; $('cliBadge').textContent = S.inbox.length || ''; $('cliBadge').hidden = !S.inbox.length; }
+  if(b.usage) showUsage(b.usage);
+  ctxRender();
+  if(!fromCache){ const cid = qs.get('calc'); if(cid && !applyBoot.opened){ applyBoot.opened = true; startWork(); openCalc(cid); } hpFromCard(); }
+}
+function showUsage(u){
+  const bar = $('mmCost'); if(!bar || isClient()) return;
+  const g = x => `${x.calls} запит. · $${x.usd.toFixed(3)} (${(x.usd*S.usd).toFixed(2)} грн)`;
+  bar.textContent = `MiniMax · Ви сьогодні: ${g(u.today)} · місяць: ${g(u.month)}` + (u.allToday ? ` · усі сьогодні: ${g(u.allToday)}` : '');
+}
+hpUsage = async function(){ if(isClient()) return; try{ showUsage(await API('usage')); }catch{} };
+setInterval(() => { if(document.visibilityState === 'visible') proxyCall({ action:'ping' }).catch(() => {}); }, 4*60*1000);
+
+// Список клієнтів — одразу з кешу, оновлення у фоні
+const _openClients = openClients;
+openClients = async function(cid){
+  if(isClient() || cid) return _openClients(cid);
+  if(S.clients){ drawClients(S.clients); API('clients').then(r => { S.clients = r.clients; if(!$('cliSheet').hidden && $('cliList')) drawClients(S.clients, $('cliQ')?.value); }).catch(() => {}); return; }
+  return _openClients();
+};
+function drawClients(list, q0){
+  const inbox = (S.inbox||[]).length ? `<div class="cgrp"><b>Нові від клієнтів · ${S.inbox.length}</b>${S.inbox.map(k => `<div class="citem" data-calc="${k.id}"><div class="ct"><b>${esc(k.client)} — ${esc(k.title)}</b><span>${dt(k.updated)} · ${k.items} поз.</span></div>${stBadge(k.status)}</div>`).join('')}</div>` : '';
+  const box = cliSheet(`<div class="row between"><b style="font-size:16px">Клієнти</b><button class="ghost" data-close>Закрити</button></div>${inbox}
+    <div class="row"><input type="search" id="cliQ" placeholder="Пошук: ПІБ або телефон" style="flex:1" value="${esc(q0||'')}"><button class="btn" data-new>+ Новий клієнт</button></div><div class="clist" id="cliList"></div>`);
+  const draw = q => { const n = String(q||'').toLowerCase().replace(/\s/g,''), dg = n.replace(/\D/g,'');
+    const f = list.filter(c => !n || c.name.toLowerCase().replace(/\s/g,'').includes(n) || (dg.length >= 3 && c.phone.replace(/\D/g,'').includes(dg)))
+      .sort((a,b) => (b.pending - a.pending) || (b.updated - a.updated) || a.name.localeCompare(b.name));
+    $('cliList').innerHTML = f.length ? f.map(c => `<div class="citem" data-id="${c.id}"><div class="ct"><b>${esc(c.name)}</b><span>${esc(c.phone)} · розрахунків ${c.calcs||0}${c.updated ? ' · ' + dt(c.updated) : ''}${S.me.role==='директор' && c.manager ? ' · ' + esc(c.manager) : ''}${!c.manager ? ' · нерозподілений' : ''}${c.source ? ' · з візитівки ' + esc(c.source) : ''}</span></div>${c.pending ? `<span class="st wait">${c.pending} нов.</span>` : ''}</div>`).join('')
+      : '<div class="small">Нікого не знайдено. Додайте нового клієнта.</div>';
+    $('cliList').querySelectorAll('[data-id]').forEach(d => d.onclick = () => openClient(d.dataset.id)); };
+  draw(q0 || ''); $('cliQ').oninput = e => draw(e.target.value);
+  box.querySelectorAll('[data-calc]').forEach(d => d.onclick = () => openCalc(d.dataset.calc));
+  box.querySelector('[data-new]').onclick = () => clientForm({}, $('cliQ').value);
+  box.querySelector('[data-close]').onclick = () => $('cliSheet').hidden = true;
+}
+
+// ── 4. Чистова: вид монтажу з потреби → фільтр матриці (накладний ≠ меблевий ≠ врізний) ──
+const MOUNT = [['over', /накладн|на стільниц|настільн|на раковину/], ['furn', /меблев|на тумб|з тумбою/], ['in', /врізн|вбудов|під стільниц|інтегрован/],
+  ['wall', /підвісн|настінн|консольн/], ['floor', /підлогов|окремостоя|пристінн/], ['hidden', /прихован/]];
+const mountKey = s => { s = String(s||'').toLowerCase(); return (MOUNT.find(([, re]) => re.test(s)) || [])[0] || ''; };
+const _mxFind = mxFind;
+mxFind = function(p, limit = 12){
+  const want = p.mount ? mountKey(p.mount) || mountKey(p.mount + ' ') : mountKey(p.query);
+  if(!want) return _mxFind(p, limit);
+  const rows = _mxFind(p, 400), ok = rows.filter(m => { const k = mountKey(`${m.mount} ${m.name}`); return k === want || (!k && !m.mount); });
+  return (ok.length ? ok : rows).slice(0, limit);
+};
+
+// ── 2. Реєстрація: телефон → (відомий: пошта) / (новий: ПІБ, пошта, дата народження + анкета) ──
+const _mmGate = mmGate;
+mmGate = function(mode){
+  if(mode !== 'register') return _mmGate(mode);
+  let g = document.getElementById('mmGate'); if(!g){ g = document.createElement('div'); g.id = 'mmGate'; document.body.appendChild(g); }
+  g.className = 'gate'; g.removeAttribute('style');
+  const card = hpCard();
+  g.innerHTML = `<form id="mmReg" class="gbox" novalidate>
+    <div class="eyebrow">Hotpoint.ai · «Гаряча Точка»</div><h2>Вхід</h2>
+    <p class="small">Вкажіть телефон — так менеджер побачить Ваші об’єкти й розрахунки${card ? '' : ''}.</p>
+    <label>Телефон<input name="phone" type="tel" required autocomplete="tel" placeholder="+380…"></label>
+    <div id="regMore" hidden>
+      <label data-f="name">ПІБ<input name="name" autocomplete="name"></label>
+      <label data-f="email">Пошта<input name="email" type="email" autocomplete="email"></label>
+      <label data-f="birth">Дата народження<input name="birth" type="date"></label>
+      <details data-f="survey" class="survey"><summary>Розкажіть про себе — підбір буде точнішим (необов’язково)</summary>
+        <label>Хто Ви<select name="kind"><option value="">—</option><option>Майстер-сантехнік</option><option>Бригада / монтажна компанія</option><option>Будівельна фірма / забудовник</option><option>Дизайнер / архітектор</option><option>Приватний клієнт (свій ремонт)</option></select></label>
+        <div class="lbl">Що найчастіше робите</div><div class="chips">${['Водопостачання','Каналізація','Опалення','Тепла підлога','Котельня / бойлерна','Чистова сантехніка','Електрика'].map(x => `<label class="chip2"><input type="checkbox" name="works" value="${x}">${x}</label>`).join('')}</div>
+        <div class="lbl">Системи</div><div class="chips">${['PPR пайка','PUSH (натяжна)','Металопласт прес','Нержавійка прес','Мідь'].map(x => `<label class="chip2"><input type="checkbox" name="systems" value="${x}">${x}</label>`).join('')}</div>
+        <label>Улюблені бренди<input name="brands" placeholder="напр.: Ekoplastik, RAFTEC, Grohe"></label>
+        <label>Сегмент<select name="segment"><option value="">—</option><option>Бюджет</option><option>Середній</option><option>Преміум</option><option>Різний — під клієнта</option></select></label>
+        <label>Оплата<select name="pay"><option value="">—</option><option>Готівка / картка</option><option>Безготівка ФОП</option><option>Безготівка ТОВ (з ПДВ)</option></select></label>
+        <label>Скільки об’єктів на місяць<select name="volume"><option value="">—</option><option>1</option><option>2–3</option><option>4–10</option><option>10+</option></select></label>
+        <label>Район / місто об’єктів<input name="district" placeholder="напр.: Львів, Сихів; Брюховичі"></label>
+        <label>Зручний зв’язок<select name="channel"><option value="">—</option><option>Viber</option><option>Telegram</option><option>Дзвінок</option></select></label>
+      </details>
+    </div>
+    <div id="mmRegErr" class="err" hidden></div>
+    <button class="btn" style="width:100%">Далі</button>
+  </form>`;
+  const f = $('mmReg'), btn = f.querySelector('button.btn'), err = $('mmRegErr'), more = $('regMore');
+  let step = 'phone', needs = [];
+  const show = list => { more.hidden = false; more.querySelectorAll('[data-f]').forEach(el => el.hidden = !list.includes(el.dataset.f)); };
+  f.onsubmit = async e => {
+    e.preventDefault(); err.hidden = true; btn.disabled = true; const old = btn.textContent; btn.textContent = 'Зачекайте…';
+    try{
+      if(step === 'phone'){
+        if(f.phone.value.replace(/\D/g,'').length < 9) throw new Error('Вкажіть телефон повністю');
+        const w = await proxyCall({ action:'lookup', phone:f.phone.value });
+        if(w.status !== 200) throw new Error(w.data?.error?.message || 'Немає з’єднання');
+        needs = w.data.needs; step = 'more'; show(w.data.user ? ['email'] : ['name','email','birth','survey']);
+        f.querySelector('h2').textContent = w.data.user ? 'З поверненням!' : (w.data.client ? 'Ви вже наш клієнт — доповніть дані' : 'Реєстрація');
+        btn.textContent = w.data.user ? 'Увійти' : 'Зареєструватися'; btn.disabled = false; (w.data.user ? f.email : f.name).focus(); return;
+      }
+      const fd = new FormData(f), many = k => fd.getAll(k);
+      const survey = { kind:fd.get('kind'), works:many('works'), systems:many('systems'), brands:fd.get('brands'), segment:fd.get('segment'), pay:fd.get('pay'), volume:fd.get('volume'), district:fd.get('district'), channel:fd.get('channel') };
+      const prefs = [survey.systems.length ? 'Системи: ' + survey.systems.join(', ') : '', survey.brands ? 'Бренди: ' + survey.brands : '', survey.segment ? 'Сегмент: ' + survey.segment : ''].filter(Boolean).join('; ');
+      const w = await proxyCall({ action:'register', phone:f.phone.value, name:f.name.value, email:f.email.value, birth:f.birth.value, card:hpCard(), profile:{ type:survey.kind, survey, prefs } });
+      if(w.status === 403 && /закрито/i.test(w.data?.error?.message||'')) return _mmGate('closed');
+      if(w.status !== 200 || !w.data?.token) throw new Error(w.data?.error?.message || 'Не вдалося увійти');
+      ls.set('hpuser', { token:w.data.token, name:w.data.name, role:w.data.role }); g.remove(); hideErr(); hpMe();
+    }catch(ex){ err.textContent = ex.message || 'Немає з’єднання. Спробуйте ще раз.'; err.hidden = false; btn.disabled = false; btn.textContent = old === 'Зачекайте…' ? 'Далі' : old; }
+  };
+  setTimeout(() => f.phone.focus(), 50);
+};
+
+// ── Візитівка → Hotpoint.ai: файл/список, який клієнт кинув у візитівці (той самий сайт → спільне сховище браузера) ──
+function hpPendingGet(){ return new Promise(ok => { try{ const r = indexedDB.open('hpcard', 1); r.onupgradeneeded = () => r.result.createObjectStore('p');
+  r.onsuccess = () => { const db = r.result, t = db.transaction('p', 'readwrite'), st = t.objectStore('p'), g = st.get('pending'); g.onsuccess = () => { st.delete('pending'); ok(g.result || null); }; g.onerror = () => ok(null); }; r.onerror = () => ok(null); }catch{ ok(null); } }); }
+async function hpFromCard(){
+  if(qs.get('from') !== 'card' || hpFromCard.done) return; hpFromCard.done = true;
+  const p = await hpPendingGet(); if(!p) return;
+  startWork(); setMode('calc');
+  if(p.file) await take(new File([p.file], p.name || 'файл', { type:p.type || p.file.type }));
+  $('txt').value = p.text || 'Порахуйте, будь ласка, мій список'; grow();
+  if(isClient() && !S.ctx.object){
+    try{ const r = await API('objects', { client_id:'' }); let o = r.objects.find(x => x.name === 'Запити з візитівки');
+      if(!o) o = (await API('object_save', { client_id:r.client.id, object:{ name:'Запити з візитівки' } })).object;
+      setCtx(r.client, o, []); }catch{}
+  }
+  send();
+}
+
+// ── 7. Звіт директора ──
+async function openReport(days){
+  const box = cliSheet('<div class="small">Рахую звіт…</div>');
+  let r; try{ r = await API('report', { days: days || 7 }); }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  const u = x => x ? `${x.calls} · $${x.usd.toFixed(2)} (${(x.usd*S.usd).toFixed(0)} грн)` : '—';
+  box.innerHTML = `<div class="row between"><b style="font-size:16px">Звіт директора</b><span class="row">${[1,7,30].map(d => `<button class="${d===r.days?'btn':''} sm" data-d="${d}">${d===1?'Сьогодні':d+' дн.'}</button>`).join('')}<button class="ghost" data-close>Закрити</button></span></div>
+    <div class="small">ШІ сьогодні: ${u(r.usage.today)} · за місяць: ${u(r.usage.month)} · <a href="https://docs.google.com/spreadsheets/d/14j3iH2uDNCQgpRJKaIpjDJpevgnMZikzxTidPkwrnLQ/edit" target="_blank" rel="noopener">Дашборд у Таблиці ↗</a></div>
+    <div class="tbox"><table class="spec"><thead><tr><th>Менеджер</th><th>Розрах.</th><th style="text-align:right">Сума, грн</th><th>Підтв.</th><th>Чекають</th><th>Від клієнтів</th><th>Очік., год</th><th>Нові кл.</th><th>З візиток</th><th>Заміни</th><th>ШІ $ міс.</th></tr></thead><tbody>
+    ${r.managers.map(m => `<tr><td>${esc(m.manager)}</td><td class="num">${m.calcs}</td><td class="num">${fmt(m.sum)}</td><td class="num">${m.confirmed}</td><td class="num">${m.pending ? `<b>${m.pending}</b>` : 0}</td><td class="num">${m.fromClients}</td><td class="num">${m.waitAvgH ?? '—'}</td><td class="num">${m.newClients}</td><td class="num">${m.fromCards}</td><td class="num">${m.rules}</td><td class="num">${m.usd.toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="11" class="small">За цей період даних ще немає.</td></tr>'}
+    </tbody></table></div>
+    ${r.topSubs.length ? `<details><summary>Що ШІ найчастіше плутає (заміни менеджерів) · ${r.topSubs.length}</summary>${r.topSubs.map(t => `<div class="rule"><div style="flex:1">${esc(t.need)}</div><b>${t.n}</b></div>`).join('')}</details>` : ''}
+    <details id="repNotes"><summary>Журнал сповіщень (Telegram — підключимо пізніше)</summary><div class="small">Завантажую…</div></details>
+    <div class="small">Щоденний звіт у Telegram через @hotpointassistant_bot — заготовка: щойно бот буде підключено, цей самий звіт приходитиме щовечора.</div>`;
+  box.querySelectorAll('[data-d]').forEach(b => b.onclick = () => openReport(+b.dataset.d));
+  box.querySelector('[data-close]').onclick = () => $('cliSheet').hidden = true;
+  $('repNotes').ontoggle = async e => { if(!e.target.open || e.target.dataset.l) return; e.target.dataset.l = 1;
+    try{ const n = (await API('notes')).notes; e.target.querySelector('.small').outerHTML = n.length ? n.map(x => `<div class="rule"><div style="flex:1"><b>${esc(x['Кому'])}</b> ${esc(x['Текст'])}<div class="note">${dt(x['Дата'])} · ${esc(x['Статус'])}</div></div></div>`).join('') : '<div class="small">Поки порожньо.</div>'; }catch{} };
+}
+$('repBtn').onclick = () => { startWork(); openReport(7); };
+
+// ── 8. Заготовки: вивантаження в КУП і залишки ──
+// КУП: формат файлу уточнимо, коли стане відомо, як КУП приймає завантаження. Поки — CSV «Код;Кількість;Ціна» + код клієнта.
+function kupExport(r){
+  const k = S.ctx.client?.kup || '', rows = r.items.filter(i => i.code && i.code !== '—');
+  const csv = '﻿' + [`# Клієнт: ${S.ctx.client?.name || ''}; код КУП: ${k}; розрахунок: ${r.title}`, 'Код;Кількість;Ціна', ...rows.map(i => `${i.code};${String(i.qty).replace('.', ',')};${String(i.price).replace('.', ',')}`)].join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' })); a.download = `КУП — ${r.title}.csv`.replace(/[\\/:*?"<>|]/g, ' '); a.click();
+}
+// Залишки: коли з’явиться щоденна таблиця з 1С/КУП (код + кількість), впишіть її id сюди — підбір показуватиме наявність.
+const STOCK_SHEET = '';
+S.stock = null;
+async function loadStock(){
+  if(!STOCK_SHEET) return;
+  try{ const csv = await (await fetch(`https://docs.google.com/spreadsheets/d/${STOCK_SHEET}/gviz/tq?tqx=out:csv`)).text(); const m = new Map();
+    for(const l of csv.split('\n')){ const c = l.split('","').map(x => x.replace(/"/g,'')); const code = (c[0]||'').replace(/\D/g,''); if(code.length >= 5) m.set(code.padStart(11,'0'), num(c[1])); }
+    S.stock = m; }catch{}
+}
+setTimeout(() => S.catPromise?.then(loadStock), 0);
+const stockTag = code => !S.stock ? '' : (S.stock.get(code) > 0 ? `<span class="st ok">є ${S.stock.get(code)}</span>` : '<span class="st">під замовлення</span>');
+
+// resEl: додаємо «В КУП» і наявність (обгортка поверх попередньої таблиці)
+const _resEl = resEl;
+resEl = function(m){
+  const el = _resEl(m);
+  const row = el.querySelector('[data-x]')?.parentNode;
+  if(row && isStaff()){ const b = document.createElement('button'); b.textContent = 'В КУП'; b.title = 'Файл для завантаження в КУП (формат уточнюється)'; b.onclick = () => kupExport(m.res); row.insertBefore(b, row.querySelector('.small')); }
+  if(S.stock) el.querySelectorAll('tbody tr').forEach(tr => { const c = tr.querySelector('.code')?.textContent; const nm = tr.querySelector('.nm'); if(c && nm) nm.insertAdjacentHTML('beforeend', ' ' + stockTag(c)); });
+  return el;
+};
+
+// Telegram-заготовка: клієнт/менеджер бачить, що сповіщення будуть через @hotpointassistant_bot
+const TG_BOT = 'hotpointassistant_bot';
 
 // ── Старт ──
 (function(){
