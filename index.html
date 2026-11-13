@@ -882,6 +882,22 @@ $('send').onclick = send;
 async function pool(tasks, n){ const out = []; let k = 0;
   await Promise.all(Array.from({length:Math.min(n,tasks.length)}, async () => { while(k < tasks.length){ const j = k++; out[j] = await tasks[j](); } }));
   return out; }
+const KB = `БАЗА ЗНАНЬ HP·KB (правила директора «Гарячої Точки» для підбору):
+ПРІОРИТЕТИ БРЕНДІВ (бренд від клієнта — тільки він; бренд/серію назвав майстер — саме його; інакше — за порядком, не перший → «аналог»):
+Пайка PPR: Ekoplastik → ASG → RAFTEC → FV PLAST → PLM. ECO ≠ Ekoplastik.
+PUSH: RAFTEC → REHAU (тільки RAUTITAN). Труба PUSH RAFTEC — PEX-A EVOH SILVER «(част)» (16х2.2, 20х2.8, 25х3.5, 32х4.4); цілу бухту лише якщо «бухта/ціла».
+Крани кульові: RAFTEC GOLD → RAFTEC BLACK → PLM STRONG → PLM BASE. Без ВВ/ВЗ → ВЗ. Кран 1" з накидною ВВ — комплект-пара RAFTEC (к-сть ÷ 2).
+Перехідники латунь, подовжувачі: RAFTEC нікель → RAFTEC GOLD → LEXLINE. Подовжувач — тільки хром.
+Каналізація: ASG HTR → OSTENDORF HT Safe → PLM; «90°» у каналізації = 87°.
+Колектори ТП: RAFTEC Brass → RAFTEC Steel → PLM; «гребінка на N» = колектор RAFTEC STEEL на N; до колектора без євроконусів — євроконуси 3/4"×16 RAFTEC = контури×2.
+Шафи: ASG → Standart. Утеплювач: PLM → Теплоізол → K-FLEX. Радіатори: Idmar → Biasi → Hidros → Purmo. Радіаторні крани: RAFTEC → Giacomini.
+Водонагрівачі: Tatra → Tesy → NovaTec. Насоси: Termojet → Tatra → Grundfos → RAFTEC → Wilo. Очистка: Ecosoft. Хомути: ECO → RAFTEC → Walraven. Ущільнення: UNIPAK, Glidex, PLM.
+Заборонено: AlcaPlast, Imprese, Qtap, Lidz, PEARL, Globus Lux, Kroner.
+ЗАВЖДИ: порядок розмірів трійника точний (25×16×25 ≠ 25×16×16); колір (червоний/синій) має збігатися; кут 45 ≠ 90; ВВ/РВ (внутр.) ≠ ЗВ/РЗ (зовн.); «з НГ»/накидна, антипротікання, для гіпсокартону, посилене, приладовий — тільки якщо майстер так написав.
+Ніколи: ЗРАЗОК, без штрихкоду, уцінка, брак, знято з виробництва, «НЕ ВОЗИМ»; (п/з) — останнім. Виняток — PUSH «(част)».
+СЛЕНГ: «Тр 32» = трійник; «НВ» = ВЗ; «ніпель 20×1/2» (PPR) = муфта PPR МРЗ; МРЗ/МРН = муфта різьб. зовн., МРВ = внутр., КРЗ/КРВ = коліно різьб.; «коліно уст./настінне/водорозетка/монтажка» = окреме настінне коліно РВ (не планка); планка — лише коли так і написано; «кліпса 25 (2)» = опора подвійна; «н.г» = накидна гайка; 5/4 = 1 1/4; 6/4 = 1 1/2; «фольга/фолія» = плівка 105 мкм; «лента пристінна/демпфер» = демпферна стрічка; «скоба такерна» = гарпун 42 мм; «водомір» = лічильник/витратомір; «зливна група» = кінцевий елемент 1" нікель RAFTEC; «лижі» = стінове кріплення радіатора; «головка» = термоголовка; «фільтр 3/4 сітчастий/косий» = фільтр груб. очистки BLACK RAFTEC; «уніпак малий» = паста 75 г; «колба 1/2 / 3/4» = колба Ecosoft 10" не прозора; «С22 500×1600» = радіатор сталевий тип 22 бокове, «VK/низ» = нижнє, висота «50» = 500; «кран подачі кут / звор кут» = клапан радіаторний кутовий подача / відсічний; «насосна група» = RAFTEC RPMGTB05; «колба для конденсату» = нейтралізатор Atlas NEUTRAL MINI; клей-піна без уточнення = Budmonster Mega 860 мл; інсталяція без бренду = Geberit Duofix + кнопка; хомути — ECO першим; труба ТП ф16 без уточнення — PEX-A RED.
+СИСТЕМА ЗА ПАРАМЕТРАМИ: 2 параметри (25×3/4) — муфта/коліно з різьбою; 3 параметри (20×16×20) — трійник; ф16 у водопроводі — швидше PUSH; «пайка X» — уся розводка PPR бренду X, ніякого PUSH; «гільзи» в замовленні — система PUSH.
+ПОХІДНІ: гільзи PUSH — трійник 3, коліно/муфта 2, різьбові й настінні 1, заглушка 1 (якщо майстер не розписав гільзи); «+ізол» — утеплювач PLM (16→18, 20→22, 25→28, 32→35), опалення/ГВ червоний, ХВ синій.`;
 const PICK_RULES = `ПРАВИЛА ПІДБОРУ (як досвідчений менеджер «Гарячої Точки»):
 1. Код бери ТІЛЬКИ зі списку кандидатів цієї потреби. Не вигадуй коди.
 2. Розміри — головне: діаметр, товщина стінки (20х2.8 ≠ 20х2.0), різьба (1/2" ≠ 3/4"), ВР/ЗР, порядок розмірів трійника (20х16х20 ≠ 20х20х16), DN. Інший розмір = НЕ точний.
@@ -892,12 +908,38 @@ const PICK_RULES = `ПРАВИЛА ПІДБОРУ (як досвідчений �
 7. Послуги, роботи, випробування — code null, match "none", note "послуга, не товар".
 8. match: "exact" — тип, розмір, система і (за наявності) бренд збігаються; "analog" — щось відрізняється (в note: ЩО саме, коротко); "none" — нічого придатного (краще none, ніж неправильний розмір).
 9. Якщо не exact — дай query: інший короткий запит для повторного пошуку (тип + розмір + бренд, як пишуть у прайсі 1С, напр. "трійник натяжний 20х16х20 RAFTEC").`;
+// Закріплені коди бази (SK): якщо потреба схожа — код завжди серед кандидатів
+const PINS = [
+  [/(труб).*(pex|push|натяж)|(pex|push).*труб/i, n => /бухт|ціл/i.test(n) ? {16:57226,20:57227,25:57228,32:57231} : {16:68435,20:68436,25:68437,32:68438}],
+  [/євроконус|евроконус/i, () => [60395]], [/дюбел/i, () => [103963]], [/насос.*(ape|тп|тепл|підлог)|насос циркуляц/i, () => [85522]],
+  [/кран(?=.*накид)(?=.*(вв|внутр))(?=.*(^|[^\d\/.])1\s*(["″'”]|''|дюйм|$|\s))/i, () => [98616]], [/інсталяц/i, () => [95330]],
+  [/коліно.*(настін|уст\b|устан|монтаж)|водорозет|монтажк/i, () => [58592,43083,88540]], [/клей.?піна|піна.?клей/i, () => [93734]],
+  [/конденсат.*(колб|нейтрал)|нейтралізатор/i, () => [109875]], [/колба/i, n => /картридж/i.test(n) ? [43702,43767] : [79376,82550]],
+  [/кінцев.*елемент|зливна група/i, () => [60391]],
+];
+function pinsFor(need){ const out = [];
+  for(const [re, f] of PINS){ if(!re.test(need)) continue; const r = f(need);
+    if(Array.isArray(r)) out.push(...r); else { const d = (need.match(/(?<![\d.,\/])(16|20|25|32)(?![\d\/])/)||[])[1]; if(d && r[d]) out.push(r[d]); } }
+  if(!pinsFor.by || pinsFor.n !== S.cat.length){ pinsFor.by = new Map(S.cat.map(x=>[x[0],x])); pinsFor.n = S.cat.length; }
+  return out.map(c => pinsFor.by.get(String(c).padStart(11,'0'))).filter(Boolean); }
+// Звірка змісту кодом (§11): розмір, колір, кут, внутр./зовн. різьба
+function mismatch(need, name){
+  const n = need.toLowerCase(), m = name.toLowerCase(), out = [], got = toks(name);
+  const lost = sizesOf(need).filter(k => !got.has(k)); if(lost.length) out.push(`розмір ${lost.map(k=>k.slice(1).replace(/×/g,'х')).join(', ')}`);
+  const red = s => /червон|red\b|красн/.test(s), blue = s => /син[іяй]|blue\b/.test(s);
+  if(red(n) && !red(m) && blue(m)) out.push('колір: треба червоний'); if(blue(n) && !blue(m) && red(m)) out.push('колір: треба синій');
+  const ang = s => [...s.matchAll(/(\d{2,3})\s*°/g)].map(x => x[1] === '87' ? '90' : x[1]);
+  const an = ang(n), am = ang(m); if(an.length && am.length && !an.some(a => am.includes(a))) out.push(`кут ${an[0]}° — у товарі ${am[0]}°`);
+  const inner = s => /(^|[^а-яa-zіїєґ])(вв|рв)([^а-яa-zіїєґ]|$)|(^|[^а-яa-zіїєґ])вн\.?\s*р|внутр/.test(s), outer = s => /(^|[^а-яa-zіїєґ])(рз|рн)([^а-яa-zіїєґ]|$)|зовн|наруж|нар\.\s*р/.test(s);
+  if(inner(n) && !outer(n) && outer(m) && !inner(m)) out.push('треба внутр. різьба'); if(outer(n) && !inner(n) && inner(m) && !outer(m)) out.push('треба зовн. різьба');
+  return out;
+}
 const candLine = c => `${c[0]} | ${c[1]||'-'} | ${c[2]} | ${c[3]}`;
 
 async function pickRound(list, prefs, ctx, effort){
   // list: [{i, need, cands:[...]}]
   const ask = async part => {
-    const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С під замовлення майстра.\n${prefs?`ВКАЗІВКИ КЛІЄНТА: ${prefs}\n`:''}${ctx?`Контекст замовлення: ${ctx}\n`:''}\n${PICK_RULES}\n\nПОТРЕБИ З КАНДИДАТАМИ (код | артикул | назва | од.):\n${JSON.stringify(part.map(x=>({i:x.i, need:x.need, candidates:x.cands.map(candLine)})))}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000 або null","match":"exact|analog|none","note":"","query":""}]} — по одному запису на кожну потребу.`}], {max_tokens:12000, reasoning:effort})));
+    const r = json(textOf(await claude([{role:'user', content:`Ти менеджер «Гарячої Точки», підбираєш товар з прайсу 1С під замовлення майстра.\n${prefs?`ВКАЗІВКИ КЛІЄНТА: ${prefs}\n`:''}${ctx?`Контекст замовлення: ${ctx}\n`:''}\n${KB}\n\n${PICK_RULES}\n\nПОТРЕБИ З КАНДИДАТАМИ (код | артикул | назва | од.):\n${JSON.stringify(part.map(x=>({i:x.i, need:x.need, candidates:x.cands.map(candLine)})))}\n\nПоверни ТІЛЬКИ JSON: {"picks":[{"i":0,"code":"00000000000 або null","match":"exact|analog|none","note":"","query":""}]} — по одному запису на кожну потребу.`}], {max_tokens:12000, reasoning:effort})));
     return r.picks || [];
   };
   const size = effort === 'high' ? 6 : 10, parts = [];
@@ -916,6 +958,8 @@ async function calc(text, file, wait){
     wait.phase = file ? 'Читаю файл' : 'Розбираю список';
     const said = S.chat.filter(m => m.role==='me' && m.text).map(m => m.text).join('\n').trim();   // усе, що клієнт писав у цьому чаті
     const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${said?`Повідомлення клієнта в цьому чаті:\n${said}\n`:''}
+${KB}
+Один рядок майстра = одна позиція (комплект не розкладай на деталі, нічого не дублюй, послуги/роботи лиши окремим рядком як є). Сленг розшифровуй за базою, бренд за пріоритетом бази вписуй у search.
 Вказівки клієнта щодо брендів і систем (напр. «пуш рафтек», «крани рафтек») — ОБОВ'ЯЗКОВІ: застосуй їх до відповідних позицій одразу (впиши бренд у need і search), не перепитуй.
 Поверни ТІЛЬКИ JSON:
 {"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком, або порожньо","brands":["бренди, які клієнт вимагає, напр. RAFTEC"],"checklist":[{"rule":"","passed":true,"comment":""}],
@@ -932,15 +976,14 @@ async function calc(text, file, wait){
 
     // Раунд 1: широкий пошук (3 запити, 20 кандидатів) + підбір із міркуваннями
     wait.phase = `Підбираю коди · ${needs.length} позицій`;
-    const r1 = needs.map((n,i) => ({ i, need:n.need, cands: search([n.search, n.alt, n.need], 20, brands) }));
+    const r1 = needs.map((n,i) => ({ i, need:n.need, cands: [...new Set([...pinsFor(n.need||''), ...search([n.search, n.alt, n.need], 20, brands)])] }));
     for(const p of await pickRound(r1, prefs, ctx, 'medium')) if(Number.isInteger(+p.i)) picks.set(+p.i, p);
 
     // Перевірка розмірів кодом: «точний» з іншим розміром → аналог
     const check = (i, p) => { const it = fix(p.code); if(!it){ if(p.code) p.code = null; return p; }
-      const need = sizesOf(needs[i].need), got = toks(`${it[1]} ${it[2]}`);
-      const lost = need.filter(k => !got.has(k));
-      if(p.match === 'exact' && lost.length) { p.match = 'analog'; p.note = [p.note, `розмір ${lost.map(k=>k.slice(1).replace(/×/g,'х')).join(', ')} не підтверджено`].filter(Boolean).join('; '); }
-      return p; };
+      const bad = mismatch(needs[i].need||'', `${it[1]} ${it[2]}`);
+      if(p.match === 'exact' && bad.length) { p.match = 'analog'; p.note = [p.note, '≠ ' + bad.join('; ')].filter(Boolean).join('; '); }
+      p.bad = bad.length; return p; };
     for(const [i,p] of picks) check(i,p);
 
     // Раунд 2: все, що не точне, — новий пошук за підказкою моделі, більше кандидатів, глибші міркування
@@ -948,7 +991,7 @@ async function calc(text, file, wait){
     if(weak.length){
       wait.phase = `Перевіряю сумнівні · ${weak.length}`;
       const r2 = weak.map(i => { const n = needs[i], p = picks.get(i) || {};
-        const c = search([p.query, n.search, n.alt, n.need].filter(Boolean), 30, brands); const prev = fix(p.code);
+        const c = [...new Set([...pinsFor(n.need||''), ...search([p.query, n.search, n.alt, n.need].filter(Boolean), 30, brands)])]; const prev = fix(p.code);
         if(prev && !c.includes(prev)) c.unshift(prev);
         return { i, need: n.need + (p.code ? ` (попередній вибір ${p.code}: ${p.note||''})` : ''), cands: c }; });
       for(const p of await pickRound(r2, prefs, ctx, 'high')){
@@ -958,10 +1001,41 @@ async function calc(text, file, wait){
       }
     }
 
+    // Раунд 3: перевірка всієї таблиці «старшим менеджером» — бачить вибір і альтернативи, виправляє помилки
+    {
+      wait.phase = `Фінальна звірка · ${needs.length}`;
+      const list = needs.map((n,i) => { const p = picks.get(i) || {}, cur = fix(p.code);
+        const alt = [...new Set([...(cur?[cur]:[]), ...pinsFor(n.need||''), ...search([p.query, n.search, n.alt, n.need].filter(Boolean), 12, brands)])];
+        return { i, need:n.need, chosen: cur ? candLine(cur) : null, match:p.match||'none', note:p.note||'', alt };
+      }).filter(x => !/послуг/i.test(x.note));
+      const parts = []; for(let k=0;k<list.length;k+=10) parts.push(list.slice(k,k+10));
+      const fixes = (await pool(parts.map(part => async () => {
+        try{ const r = json(textOf(await claude([{role:'user', content:`Ти старший менеджер «Гарячої Точки». Молодший менеджер підібрав коди. Перевір КОЖЕН рядок за базою і правилами; знайди помилки: не той розмір/колір/різьба/кут/тип/система, бренд не за вказівкою клієнта чи не за пріоритетом бази, зайве «аналог», хоча в альтернативах є точний.\n${prefs?`ВКАЗІВКИ КЛІЄНТА: ${prefs}\n`:''}\n${KB}\n\n${PICK_RULES}\n\nРЯДКИ (chosen — поточний вибір, alt — альтернативи з прайсу):\n${JSON.stringify(part.map(x=>({i:x.i, need:x.need, chosen:x.chosen, match:x.match, note:x.note, alt:x.alt.map(candLine)})))}\n\nПоверни ТІЛЬКИ JSON зі ЗМІНАМИ (правильні рядки не включай): {"fix":[{"i":0,"code":"код з alt або null","match":"exact|analog|none","note":"що виправив / чим відрізняється"}]}`}], {max_tokens:12000, reasoning:'high'})));
+          return r.fix || []; }catch{ return []; }
+      }), 6)).flat();
+      for(const f of fixes){ const i = +f.i, x = list.find(y => y.i === i); if(!x) continue;
+        if(f.code && !x.alt.some(c => c[0] === String(f.code).replace(/\D/g,'').padStart(11,'0'))) continue;   // лише з показаних кандидатів
+        const q = check(i, {...f}); const old = picks.get(i) || {};
+        if(!fix(q.code) && fix(old.code) && old.match === 'exact' && !old.bad) continue;   // не ламаємо чистий точний вибір
+        picks.set(i, q); }
+    }
+
     const items = needs.map((n,i)=>{ const p=picks.get(i)||{}; const it = fix(p.code);
       const tag = it && p.match !== 'exact' ? 'АНАЛОГ' : '';
       return { code: it?it[0]:'—', art: it?it[1]:'', name: it?it[2]:`НЕ ЗНАЙДЕНО: ${n.need}`, qty:Number(n.qty)||1, unit: it?it[3]:(n.unit||'шт'), match: it ? (p.match==='exact'?'exact':'analog') : 'none',
         category: CATS.some(c=>c[0]===n.category)?n.category:'rough_plumbing', price: it?Math.round(uah(it)*100)/100:0, note:[n.note, tag && p.note ? `${tag}: ${p.note}` : tag || (!it ? p.note : '')].filter(Boolean).join(' · ') }; });
+    // Похідні: гільзи PUSH (трійник 3, коліно/муфта 2, різьбові/настінні/заглушка 1), якщо в замовленні їх нема
+    if(!needs.some(n => /гільз/i.test(n.need||'')) && !items.some(i => /гільз/i.test(i.name))){
+      const SLV = {16:'00000058570', 20:'00000058571', 25:'00000068466'}, cnt = {};
+      for(const it of items){ if(!/натяж|push/i.test(it.name) || /труба|гільз/i.test(it.name)) continue;
+        const d = (it.name.match(/ф\s*(\d+(?:\s*х\s*[\d\/"]+)*)/i)||[])[1]; if(!d) continue;
+        const parts = d.split(/\s*х\s*/).filter(x => SLV[x]);
+        const one = /різьб|РЗ|РВ|настін|заглуш/i.test(it.name);
+        const list = /трійник/i.test(it.name) ? parts : one ? parts.slice(0,1) : /коліно|муфта/i.test(it.name) && parts.length === 1 ? [parts[0], parts[0]] : parts;
+        for(const x of list) cnt[x] = (cnt[x]||0) + it.qty; }
+      for(const [d,q] of Object.entries(cnt)){ const it = byCode.get(SLV[d]); if(!it) continue;
+        items.push({ code:it[0], art:it[1], name:it[2], qty:q, unit:it[3], match:'exact', category:'rough_plumbing', price:Math.round(uah(it)*100)/100, note:'Похідна: гільзи до фітингів PUSH' }); }
+    }
     const miss = items.filter(i=>i.code==='—').length, an = items.filter(i=>i.match==='analog').length;
     wait.typing=null;
     wait.text = (draft.reply ? draft.reply+'\n\n' : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
