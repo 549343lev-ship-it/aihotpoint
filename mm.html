@@ -2,6 +2,9 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="https://hot-point.com.ua/image/hp_logo_ua.svg"><link rel="alternate icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23F2673A%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-size=%2216%22 font-family=%22Arial%22 font-weight=%22bold%22 fill=%22white%22 text-anchor=%22middle%22%3EГТ%3C/text%3E%3C/svg%3E">
@@ -565,6 +568,23 @@ body.emptyChat #msgs{min-height:100%;justify-content:center}
 <script>
 const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
+// ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
+// і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
+const APP_VER = '2026-11-13.3';
+(() => {
+  const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
+  if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
+  const check = async (force) => { try{
+    const t = await (await fetch(location.pathname + '?nocache=' + Date.now(), {cache:'no-store'})).text();
+    const v = (t.match(/const APP_VER = '([^']+)'/)||[])[1];
+    if(!v || v === APP_VER || ss.get('hpReload') === v) return;
+    const idle = !(typeof S !== 'undefined' && S.busy) && !(document.getElementById('txt')?.value || '').trim();
+    if(force || idle){ ss.set('hpReload', v); location.replace(location.pathname + '?r=' + Date.now() + location.hash); }
+  }catch{} };
+  check(true);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') check(false); });
+  setInterval(() => check(false), 15*60*1000);
+})();
 const MM = { minimax:{ url:'https://api.minimax.io/anthropic/v1/messages', model:'MiniMax-M3.1-Flash' },
              openrouter:{ url:'https://openrouter.ai/api/v1/chat/completions', model:'minimax/minimax-m3.1-flash' } };
 // Проксі Google Apps Script: ключ MiniMax лежить на проксі; користувач реєструється і отримує токен.
