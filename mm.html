@@ -673,6 +673,15 @@ body.shellOn .citem:hover{border-color:var(--brand)}
 body.shellOn .sgrp{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 body.shellOn .sbar input{border-radius:999px!important;padding-left:16px}
 body.shellOn .vabar{position:sticky;top:var(--vt2,0px);z-index:29}
+.optbox{margin-top:12px;border:1px solid var(--line);border-top:3px solid var(--brand);background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:8px}
+.opth{display:flex;flex-direction:column;gap:2px}.opth b{font-size:15px}
+.optrow{display:grid;grid-template-columns:20px 1fr auto auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.optrow input{accent-color:var(--brand-ink);width:18px;height:18px}
+.optn .note{display:block;color:var(--muted);font-size:12px}
+.optn .code{font-family:var(--mono);color:var(--brand-ink);font-size:12px}
+.optq{color:var(--muted);white-space:nowrap}.optp{white-space:nowrap}
+.optbox .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+@media (max-width:640px){.optrow{grid-template-columns:20px 1fr auto}.optrow .optq{display:none}.optrow button{grid-column:2/4;justify-self:start}}
 </style>
 </head>
 <body>
@@ -787,7 +796,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-14.6';
+const APP_VER = '2026-11-14.7';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -1601,7 +1610,7 @@ async function calc(text, file, wait){
   const t0 = Date.now(); const tick = setInterval(()=>{ wait.typing = `${wait.phase||'Читаю'} · ${Math.round((Date.now()-t0)/1000)} с`; renderTyping(wait); }, 700);
   try{
     wait.phase = file ? 'Читаю файл' : 'Розбираю список';
-    const said = S.chat.filter(m => m.role==='me' && m.text).map(m => m.text).join('\n').trim();   // усе, що клієнт писав у цьому чаті
+    const said = wait.said || S.chat.filter(m => m.role==='me' && m.text).map(m => m.text).join('\n').trim();   // усе, що клієнт писав у цьому чаті
     const prompt = `${RULES}\n\n${TASK[S.mode]}\n${file?`Файл: ${file.name}\n`:''}${file?.text?`Вміст файлу:\n${file.text.slice(0,30000)}\n`:''}${said?`Повідомлення клієнта в цьому чаті:\n${said}\n`:''}
 ${KB}
 Один рядок майстра = одна позиція (комплект не розкладай на деталі, нічого не дублюй, послуги/роботи лиши окремим рядком як є). Сленг розшифровуй за базою, бренд за пріоритетом бази вписуй у search.
@@ -2866,10 +2875,15 @@ ${prev ? `Попередні повідомлення клієнта в цьом
 ${nImg ? 'Перше зображення додано — подивись, що на ньому (список, план, візуалізація, фото товару, щось інше).' : ''}
 Завдання: зрозумій, чого людина хоче, навіть якщо написано коротко, з помилками, сленгом, суржиком чи взагалі без інструкцій («ось», «порахуй», «шо треба», «зроби», просто фото без тексту). Додумуй розумно, як досвідчений продавець:
 фото/скан списку чи рахунку → calc; план, креслення, ескіз з кімнатами чи виводами, візуалізація цілої ванної з проханням «порахувати» → project; один товар чи «підбери» → pick.
+КОМПЛЕКТ / СИСТЕМА: якщо просять комплект чи систему без готового переліку («комплект теплої підлоги 30 м²», «котельня», «водопідготовка на квартиру», «колектор на 4 контури і все до нього») — заповни kit:
+core — лише ОСНОВНИЙ товар(и), які прямо просили, рядками списку з кількістю і розміром (напр. «Колектор теплої підлоги RAFTEC 1" на 4 контури з витратомірами — 1 шт»);
+options — що до нього зазвичай ще треба (насосно-змішувальна група/насос, крани кульові на колектор, євроконуси, труба з кількістю за нормою, колекторна шафа, термоголовки/сервоприводи, кронштейни, автоматичний повітровідвідник, зливні крани, тощо — доречне саме до цього товару), 4-10 рядків з кількістю і коротким «навіщо».
+Норми майстра: ${RULES.split('\n').filter(l => /ТП|контур|Ø25|Водопідготовка|Рушникосушка/.test(l)).join(' ')}
+Для звичайного списку, файлу чи проєкту kit не заповнюй.
 clear=false ЛИШЕ якщо без уточнення результат буде поганим: нема ні файлу, ні переліку, ні опису об’єкта; або на фото не видно, що рахувати; або запит не про товари магазину. Короткий, але зрозумілий запит — це clear=true.
-Поверни ТІЛЬКИ JSON: {"mode":"calc|project|pick|question","confidence":0.0,"clear":true,"understood":"одним реченням українською: як ти зрозумів завдання","missing":["чого бракує для хорошого результату"],"ask":"якщо clear=false: 1-2 речення на «Ви» — що саме незрозуміло і чому","examples":["2-4 короткі приклади, що написати чи надіслати"],"answer":"якщо mode=question — коротка відповідь по суті, інакше порожньо"}`;
+Поверни ТІЛЬКИ JSON: {"mode":"calc|project|pick|question","confidence":0.0,"clear":true,"understood":"одним реченням українською: як ти зрозумів завдання","missing":["чого бракує для хорошого результату"],"ask":"якщо clear=false: 1-2 речення на «Ви» — що саме незрозуміло і чому","examples":["2-4 короткі приклади, що написати чи надіслати"],"answer":"якщо mode=question — коротка відповідь по суті, інакше порожньо","kit":{"core":["рядок — к-сть"],"options":[{"line":"рядок — к-сть","why":"навіщо"}]}}`;
   try{
-    const d = json(textOf(await claude([{ role:'user', content:[...(nImg ? [{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:file.images[0] } }] : []), { type:'text', text:prompt }] }], { max_tokens:1500, reasoning:'low' })));
+    const d = json(textOf(await claude([{ role:'user', content:[...(nImg ? [{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:file.images[0] } }] : []), { type:'text', text:prompt }] }], { max_tokens:2500, reasoning:'low' })));
     return { ...d, go:true };
   }catch(e){ console.warn('understand', e); return { go:true, clear:true }; }       // не вдалось — працюємо як раніше
 }
@@ -2892,12 +2906,45 @@ async function hpRoute(text, file, wait, via){
   S.keepFile = null;
   if(['calc','project','pick'].includes(u.mode) && u.mode !== S.mode && (u.confidence ?? 0) >= 0.7){ setMode(u.mode); wait.mode = u.mode; }
   wait.understood = u.understood || '';
-  const r = S.mode === 'pick' ? await _pickU(file, wait) : await _calcU(text, file, wait);
+  const core = (u.kit?.core || []).filter(x => typeof x === 'string' && x.trim()), opts = (u.kit?.options || []).filter(o => o && o.line);
+  let r;
+  if(core.length && !file){                                                          // комплект: основне — у таблицю, решта — опціями
+    if(S.mode !== 'calc') setMode('calc');
+    wait.said = core.join('\n');
+    const tmp = { role:'ai', said:opts.map(o => o.line).join('\n') };
+    [r] = await Promise.all([_calcU(core.join('\n'), null, wait), opts.length ? _calcU('', null, tmp).catch(() => null) : null]);
+    const found = (tmp.res?.items || []).filter(it => it.code && it.code !== '—');
+    const same = tmp.res?.items?.length === opts.length;
+    wait.opts = found.map(it => ({ ...it, why: same ? (opts[tmp.res.items.indexOf(it)]?.why || '') : '' }));
+    if(wait.opts.length && wait.text) wait.text += `\n\n**До цього зазвичай ще потрібно** — дивіться нижче під таблицею і додайте, що треба.`;
+  } else r = S.mode === 'pick' ? await _pickU(file, wait) : await _calcU(text, file, wait);
   if(wait.understood && wait.text && !wait.clarify) wait.text = `**Зрозумів так:** ${wait.understood}\n\n` + wait.text;
   render(); save(); return r;
 }
 calc = (text, file, wait) => hpRoute(text, file, wait, 'calc');
 pick = (file, wait) => hpRoute(S.chat.filter(m => m.role === 'me').slice(-1)[0]?.text || '', file, wait, 'pick');
+
+// ── «Додаткові опції» під таблицею результату: додати все / вибрані / по одному ──
+const _resElOpt = resEl;
+resEl = function(m){
+  const el = _resElOpt(m);
+  if(!m.opts?.length) return el;
+  const box = document.createElement('div'); box.className = 'optbox';
+  const draw = () => {
+    if(!m.opts.length){ box.remove(); return; }
+    box.innerHTML = `<div class="opth"><b>Додаткові опції до цього</b><span class="small">Оберіть, що додати в розрахунок. Додане потім можна видалити хрестиком у таблиці.</span></div>
+      ${m.opts.map((o, k) => `<label class="optrow"><input type="checkbox" data-k="${k}" checked><span class="optn"><span class="code">${esc(o.code)}</span> ${esc(o.name)}${o.why ? `<span class="note">${esc(o.why)}</span>` : ''}</span><span class="optq">${o.qty} ${esc(o.unit || '')}</span><b class="optp">${o.price ? fmt(Math.round(o.price * o.qty)) + ' грн' : '—'}</b><button type="button" class="sm" data-one="${k}">+ Додати</button></label>`).join('')}
+      <div class="row"><button class="btn" data-all>Додати все (${m.opts.length})</button><button data-sel>Додати вибрані</button><button class="ghost" data-none>Не потрібно</button></div>`;
+    const add = ks => { const pick = ks.map(k => m.opts[k]).filter(Boolean);
+      for(const o of pick){ const { why, ...it } = o; m.res.items.push({ ...it, note:[it.note, why ? 'Опція: ' + why : 'Опція'].filter(Boolean).join(' · ') }); }
+      m.opts = m.opts.filter(o => !pick.includes(o)); save(); if(m.calcId || S.ctx.object) try{ saveSoon(m); }catch{} render(); };
+    box.querySelector('[data-all]').onclick = () => add(m.opts.map((_, k) => k));
+    box.querySelector('[data-sel]').onclick = () => add([...box.querySelectorAll('input[data-k]:checked')].map(x => +x.dataset.k));
+    box.querySelector('[data-none]').onclick = () => { m.opts = []; save(); render(); };
+    box.querySelectorAll('[data-one]').forEach(b => b.onclick = e => { e.preventDefault(); add([+b.dataset.one]); });
+  };
+  draw(); el.appendChild(box); return el;
+};
 // ══ Оболонка застосунку: одна шапка (☰ · лого · меню · профіль), бокове меню, нижня «пігулка» на телефоні.
 //    Клієнт і працівник бачать різні меню: клієнт ніколи не бачить «Клієнти», «Звіт», витрати ШІ.
 // Кеш стартових даних прив’язаний до токена: інший акаунт у цьому ж браузері не побачить чужого меню.
