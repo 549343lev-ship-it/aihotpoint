@@ -691,6 +691,32 @@ body.shellOn .vabar{position:sticky;top:var(--vt2,0px);z-index:29}
 .sclay i{width:14px;height:4px;display:block}.sclay input{accent-color:var(--brand-ink)}
 .scz{display:inline-flex;gap:4px;margin-left:auto}
 .scwrap{overflow:auto;border:1px solid var(--line);background:#fff;-webkit-overflow-scrolling:touch}#scHost svg{width:100%;height:auto;display:block}
+.rcard{border:1px solid var(--line);border-top:3px solid var(--brand);background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:8px;margin-top:8px;max-width:640px}
+.rsum{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline}.rsum b{font-size:16px}.rsum span{grid-column:1;font-size:13px;color:var(--muted)}.rsum em{color:#B42318;font-style:normal;font-weight:600}
+.rsum strong{grid-row:1/3;grid-column:2;font-size:17px;white-space:nowrap}
+.rlbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.rcats{display:flex;flex-wrap:wrap;gap:8px}
+.rcats button{display:inline-flex;align-items:center;gap:8px;padding:10px 14px!important;font-weight:700;font-size:14px}
+.rcats i{font-style:normal;background:var(--tint);color:var(--brand-ink);border-radius:999px;padding:1px 8px;font-size:12px}
+.rcats .ropt{border-style:dashed!important}
+.rfiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.rf{display:flex!important;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px!important}
+.rf b{font-size:14px}.rf span{font-size:12px;color:var(--muted);font-weight:600}.rf:disabled{opacity:.7}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px;font-weight:700}.rlinks a{color:var(--brand-ink)}
+details.more{margin-top:6px}details.more summary{cursor:pointer;color:var(--brand-ink);font-weight:700;font-size:13px}
+.modenote{font-size:12.5px;color:#7A3B00;background:#FFF4E5;border-left:3px solid #E65100;padding:6px 10px;margin:4px 0}
+.modenote[hidden]{display:none}
+@media (max-width:899px){
+  body.ux2 header{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--surface)!important}
+  body.ux2 .ctxbar .small,body.ux2 footer .legal,body.ux2 .promos,body.ux2 .tip{display:none!important}
+  body.ux2 .msg.enter{animation:none}
+  body.ux2 #drawer,body.ux2 .dr-in{transition-duration:.16s}
+  .rcats button{flex:1 1 auto;justify-content:space-between}
+  .rfiles{grid-template-columns:1fr 1fr}.rf{padding:8px 10px!important}.rf b{font-size:13px}
+  .modenote{font-size:11.5px;padding:4px 8px}
+  body.ux2 .vhead{grid-template-columns:auto 1fr auto;padding:8px 0}body.ux2 .vhead b{font-size:15px!important;line-height:1.25}
+  body.ux2 .vhead button{padding:6px 10px!important;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -805,7 +831,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-14.8';
+const APP_VER = '2026-11-14.9';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -1541,7 +1567,7 @@ function projCalc(P, said){
   add('Система захисту від протікання: кран на ввід + датчики в мокрі зони', 1, 'шт', 'rough_plumbing', '', 'Mastino / Ajax / Tervix — датчик біля мийки, пральної, санвузла, котла/бойлера');
   if(hwBoiler){ add('Кран кульовий 1/2 ВЗ RAFTEC', 2, 'шт'); add('Шланг для води 1/2 ВВ 50 см', 2, 'шт'); }
   // ── Тепла підлога (не в спальнях/дитячих/гардеробах), крок 150 мм ──
-  const tpRooms = P.rooms.filter(r => r.area > 0 && !NO_TP.test(r.type));
+  const tpRooms = P.rooms.filter(r => r.area >= 2 && !NO_TP.test(r.type) && !/пральн|комор|тамбур|гардероб|котельн|шаф|балкон/i.test(r.name || ''));
   const loops = []; for(const r of tpRooms){ const pipe = r.area * 0.85 * 6.7 + 2 * 6 + 1; const k = Math.max(1, ceil(pipe / 85)); for(let i = 0; i < k; i++) loops.push({ room:r.name, m:pipe / k }); }
   loops.sort((a, b) => a.m - b.m); // малі поруч об’єднуємо, якщо разом ≤ 90 м
   for(let i = 0; i < loops.length - 1; i++) if(loops[i].m + loops[i+1].m <= 90){ loops[i+1] = { room:loops[i].room + ' + ' + loops[i+1].room, m:loops[i].m + loops[i+1].m }; loops.splice(i, 1); i--; }
@@ -3090,17 +3116,17 @@ function openScheme(m){
 openScheme = tracked(openScheme);
 
 // ── PDF-альбом A3: рамка, шапка, штамп «Гаряча Точка», аркуші шарів + специфікація без цін ──
-function schemeAlbum(m){
+function albumDoc(m){
   const sc = m.scheme, obj = m.res?.title || 'Проєкт', date = new Date().toLocaleDateString('uk-UA');
   const mg = isClient() ? S.me?.manager : S.me, dev = mg?.name || 'менеджер «Гарячої Точки»', ph = mg?.phone || '0-800-305-777';
-  const sheets = [['Загальна схема мереж', SC_LAYERS.map(l => l[0])], ['Водопостачання: холодна і гаряча вода', ['cold','hot']], ['Каналізація', ['sew']], ['Опалення: тепла підлога, радіатори, котел', ['heat']], ['Електрика: щит і групи', ['el']]];
+  const sheets = !sc ? [] : [['Загальна схема мереж', SC_LAYERS.map(l => l[0])], ['Водопостачання: холодна і гаряча вода', ['cold','hot']], ['Каналізація', ['sew']], ['Опалення: тепла підлога, радіатори, котел', ['heat']], ['Електрика: щит і групи', ['el']]];
   const items = (m.res?.items || []).filter(i => i.code && i.code !== '—'), per = 26, secs = CATS.map(c => [c[1], items.filter(i => i.category === c[0])]).filter(x => x[1].length);
   const rows = []; secs.forEach(([n, list]) => { rows.push({ sec:n }); list.forEach(i => rows.push(i)); });
   const specPages = []; for(let k = 0; k < rows.length; k += per) specPages.push(rows.slice(k, k + per));
   const total = sheets.length + specPages.length; let n = 0;
-  const logo = '<img src="https://hot-point.com.ua/image/hp_logo_ua.svg" alt="Гаряча Точка" onerror="this.outerHTML=\'<b class=lg>Гаряча Точка</b>\'">';
+  const logo = `<img src="${new URL('hp_logo.svg', location.href).href}" alt="Гаряча Точка">`;
   const stamp = title => `<div class="stamp"><div class="big">${logo}<span>гаряча лінія 0-800-305-777 · hot-point.com.ua</span></div>
-    <div>Об’єкт</div><div>${esc(obj)}</div><div>Аркуш</div><div>${esc(title)}</div><div>Стадія</div><div>Принципова схема мереж (не в масштабі)</div>
+    <div>Об’єкт</div><div>${esc(obj)}</div><div>Аркуш</div><div>${esc(title)}</div><div>Стадія</div><div>${sc ? 'Принципова схема мереж (не в масштабі)' : 'Підбір матеріалів'}</div>
     <div>Розробив</div><div><b>${esc(dev)}</b>, «Гаряча Точка», Львів, вул. Зелена, 238</div><div>Контакти</div><div>${esc(ph)}</div><div>Дата</div><div>${date}</div><div class="last">Аркуш</div><div class="last">${++n} з ${total}</div></div>`;
   const head = title => `<div class="top"><div class="brand">${logo}<small>${esc(obj)}</small></div><div class="stitle">${esc(title)}</div></div>`;
   const pages = sheets.map(([title, ls]) => `<section class="sheet"><div class="frame">${head(title)}<div class="body"><div class="draw">${schemeSVG(sc, new Set(ls))}</div><div class="side"><div class="note">Розводка показана принципово: траси по стінах, ввід води біля вхідних дверей, стояки каналізації біля мокрих зон і кухні. Довжини й кількості — у специфікації.</div>${stamp(title)}</div></div></div></section>`);
@@ -3118,10 +3144,9 @@ function schemeAlbum(m){
 .spec{padding:4mm 6mm;display:grid;grid-template-rows:1fr auto;gap:3mm;min-height:0}table{border-collapse:collapse;width:100%;font-size:2.9mm;align-self:start}th{background:#F5F5F4;text-align:left;padding:1.4mm 2mm;border:.2mm solid #DADADA}
 td{padding:.8mm 1.6mm;border:.2mm solid #DADADA;vertical-align:top}td.c{text-align:center;white-space:nowrap}td.m{font-family:monospace;white-space:nowrap}tr.s td{background:#FFF0EA;font-weight:700;border-left:1mm solid #F2673A}
 .foot{display:grid;grid-template-columns:1fr 150mm;gap:6mm;align-items:end}`;
-  const w = window.open('', '_blank'); if(!w){ showErr('Дозвольте спливаючі вікна для цього сайту, щоб зберегти PDF.'); return; }
-  w.document.write(`<!doctype html><html lang="uk"><head><meta charset="utf-8"><title>${esc(obj)} — схема мереж</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"><style>${css}</style></head><body>${pages.join('')}<script>window.onload=()=>setTimeout(()=>print(),700)<\/script></body></html>`);
-  w.document.close();
+  return `<!doctype html><html lang="uk"><head><meta charset="utf-8"><title>${esc(obj)}</title><link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"><style>${css}</style></head><body>${pages.join('')}</body></html>`;
 }
+function schemeAlbum(m){ return hpMakePDF(m); }
 
 // ── у результаті проєкту: мініатюра схеми + кнопки ──
 const _resElSc = resEl;
@@ -3176,7 +3201,7 @@ function shMenu(){
   bar.className = 'shell gut';
   bar.innerHTML = `<div class="in">
     <button class="sh-ic" id="shBurger" aria-label="Відкрити меню">${shIco('menu')}</button>
-    <a class="sh-logo" href="https://hot-point.com.ua/" target="_blank" rel="noopener" aria-label="Гаряча Точка"><img src="https://hot-point.com.ua/image/hp_logo_ua.svg" alt="Гаряча Точка" onerror="this.parentNode.classList.add('nologo')"></a>
+    <a class="sh-logo" href="https://hot-point.com.ua/" target="_blank" rel="noopener" aria-label="Гаряча Точка"><img src="hp_logo.svg" alt="Гаряча Точка" onerror="this.parentNode.classList.add('nologo')"></a>
     <span class="sh-ai"><span class="dot"></span>Hotpoint<b>.ai</b></span>
     <nav class="sh-nav" id="shNav" aria-label="Розділи"></nav>
     <div class="sh-right">
@@ -3270,10 +3295,173 @@ const _startWorkSh = startWork; startWork = function(){ _startWorkSh(); shellRen
 const _openProfileSh = openProfile;
 openProfile = async function(cid){ await _openProfileSh(cid); if(!cid && !S.viewAs && S.lastProfile){ S.myAva = S.lastProfile.avatar || ''; shellRender(); } };
 // вікна — між шапкою і «пігулкою»
-setInterval(() => { const tb = $('tabbar'), st = document.documentElement.style;
-  st.setProperty('--vb2', tb && !tb.hidden && isMobile() ? Math.max(0, innerHeight - tb.getBoundingClientRect().top) + 'px' : '0px');
-  const h = document.querySelector('header'); st.setProperty('--vt2', (h ? h.getBoundingClientRect().bottom : 0) + 'px'); }, 400);
+(() => { let last = ''; const upd = () => { const tb = $('tabbar'), st = document.documentElement.style, h = document.querySelector('header');
+  const vb = (tb && !tb.hidden && isMobile() ? Math.max(0, Math.round(innerHeight - tb.getBoundingClientRect().top)) : 0) + 'px', vt = Math.round(h ? h.getBoundingClientRect().bottom : 0) + 'px';
+  if(vb + vt === last) return; last = vb + vt; st.setProperty('--vb2', vb); st.setProperty('--vt2', vt); };
+  addEventListener('resize', upd); setInterval(upd, 1000); upd(); })();
 shellRender();
+// ══ UX-2: чати за профілем, менше смикання на телефоні, одне вікно за раз, компактний результат з файлами, справжній PDF ══
+
+// ── 1. Чати за профілем: локально — окремо для кожного акаунта, на сервері — один файл на чат, синхронізація з будь-якого пристрою ──
+const chatLS = () => 'chats:' + String((ls.get('hpuser') || {}).token || 'anon').slice(0, 16);
+Chats.list = function(){ let v = ls.get(chatLS());
+  if(!v){ const old = ls.get('chats'); if(Array.isArray(old) && old.length){ v = old; ls.set(chatLS(), old); try{ localStorage.removeItem('chats'); }catch{} } }
+  return Array.isArray(v) ? v : []; };
+Chats.put = function(list){ ls.set(chatLS(), list.slice(0, 60)); };
+const chatPush = (() => { const t = new Map(); return id => { if(!apiKey() || !id) return; clearTimeout(t.get(id));
+  t.set(id, setTimeout(() => { const c = Chats.list().find(x => x.id === id); if(c && c.msgs) API('chat_put', { chat:c }).catch(() => {}); }, 2500)); }; })();
+const _saveCh = save;
+save = function(){ _saveCh(); if(S.cid) chatPush(S.cid); };
+async function chatsSync(){
+  if(!apiKey()) return; let r; try{ r = await API('chats_list'); }catch{ return; }
+  const local = Chats.list(), byId = new Map(local.map(c => [c.id, c])), remote = new Set();
+  for(const c of r.chats || []){ remote.add(c.id); const l = byId.get(c.id);
+    if(!l) byId.set(c.id, { ...c, msgs:null }); else if((c.updated || 0) > (l.updated || 0)) byId.set(c.id, { ...l, ...c, msgs:null }); }
+  const list = [...byId.values()].sort((a, b) => (b.updated || 0) - (a.updated || 0)); Chats.put(list);
+  list.filter(c => c.msgs && !remote.has(c.id)).slice(0, 20).forEach(c => API('chat_put', { chat:c }).catch(() => {}));   // старі локальні — на сервер
+  if(!$('side').hidden) renderSide();
+}
+const _openChatCh = openChat;
+openChat = async function(id){
+  const c = Chats.list().find(x => x.id === id);
+  if(c && !c.msgs){ try{ showErr('Завантажую чат…'); const r = await API('chat_get', { id }); hideErr();
+      Chats.put(Chats.list().map(x => x.id === id ? { ...x, ...r.chat } : x)); }catch(e){ showErr('Не вдалося завантажити чат: ' + e.message); return; } }
+  _openChatCh(id);
+};
+const _renderSideCh = renderSide;
+renderSide = function(){ _renderSideCh();
+  $('chatList').querySelectorAll('.citem .x').forEach((x, i) => { const c = Chats.list()[i]; if(c) x.addEventListener('click', () => API('chat_del', { id:c.id }).catch(() => {}), true); }); };
+const _hpMeCh = hpMe; hpMe = async function(){ await _hpMeCh(); chatsSync(); };
+addEventListener('visibilitychange', () => { if(!document.hidden && S.me && !S.busy) chatsSync(); });
+
+// ── 2. Плитки: одразу обирають режим (без висувного опису), підказка — у полі вводу ──
+document.querySelectorAll('[data-tile]').forEach(b => b.onclick = () => {
+  startWork(); setMode(b.dataset.tile); $('tileSheet').hidden = true; $('txt').focus({ preventScroll:true }); hpModeNote(); });
+function hpModeNote(){
+  let n = $('modeNote'); if(!n){ n = document.createElement('div'); n.id = 'modeNote'; n.className = 'modenote'; $('ctxBar').after(n); }
+  n.hidden = S.mode !== 'project';
+  n.innerHTML = S.mode === 'project' ? '<b>Проєкти — бета.</b> Тимчасово безкоштовно, згодом стане платною функцією. Результат — чернетка, його перевіряє менеджер.' : '';
+}
+const _setModeNote = setMode; setMode = function(m){ _setModeNote(m); try{ hpModeNote(); }catch{} };
+
+// ── 3. Одне вікно за раз + попередження про незбережене ──
+S.dirty = false;
+document.addEventListener('input', e => { if(e.target.closest('#cliSheet form, #cliSheet .cform')) S.dirty = true; }, true);
+document.addEventListener('submit', e => { if(e.target.closest('#cliSheet')) setTimeout(() => S.dirty = false, 50); }, true);
+const okLeave = () => !S.dirty || confirm('Є незбережені зміни. Закрити без збереження?');
+function closeOthers(keep){
+  if(keep !== 'drawer') drawerClose();
+  if(keep !== 'side' && !$('side').hidden) closeSide();
+  if(keep !== 'more') $('moreSheet').hidden = true;
+  $('tileSheet').hidden = true;
+}
+const _viewOpenX = viewOpen; viewOpen = function(html){ closeOthers('view'); S.dirty = false; return _viewOpenX(html); };
+const _closeViewX = closeView; closeView = function(){ if(!$('cliSheet').hidden && !okLeave()) return; S.dirty = false; S.fullRes = null; _closeViewX(); render(); };
+const _navBackX = navBack; navBack = function(){ if(!okLeave()) return; S.dirty = false; _navBackX(); };
+const _openSideX = openSide; openSide = function(){ closeOthers('side'); _openSideX(); };
+const _drawerOpenX = drawerOpen; drawerOpen = function(side){ closeOthers('drawer'); _drawerOpenX(side); };
+const _newChatX = newChat; newChat = function(){
+  if(($('txt').value.trim() || S.file) && !confirm('У полі є ненадісланий текст або файл. Почати новий чат і прибрати їх?')) return;
+  $('txt').value = ''; S.file = null; try{ renderAtt(); }catch{} _newChatX(); };
+
+// ── 4. Компактний результат: підсумок, розділи кнопками (список у вікні), опції, файли ──
+const _resElFull = resEl;
+S.fullRes = null;
+function resStats(m){ const it = m.res.items, n = it.length, ex = it.filter(i => i.match === 'exact').length, an = it.filter(i => i.match === 'analog').length, miss = it.filter(i => i.code === '—').length;
+  return { n, ex, an, miss, total:it.reduce((a, i) => a + i.price * i.qty, 0) }; }
+function openResCat(m, cat){
+  m.res.tab = cat; S.fullRes = m; S.tab = 'res';
+  const box = viewOpen(`<div class="vhead"><button class="ghost" data-back>←</button><b>${esc(CATS.find(c => c[0] === cat)?.[1] || 'Товари')} · ${esc(m.res.title)}</b><button class="ghost" data-close>Закрити</button></div><div id="resHost"></div>`);
+  box.querySelector('[data-back]').onclick = () => closeView();
+  const host = $('resHost'); host.appendChild(_resElFull(m)); host.querySelector('.scprev')?.remove();
+  // перемикання вкладок усередині вікна лишає повну таблицю
+  new MutationObserver(() => { if(!host.querySelector('.res')) host.appendChild(_resElFull(m)); host.querySelector('.scprev')?.remove(); }).observe(host, { childList:true, subtree:true });
+}
+resEl = function(m){
+  if(S.fullRes === m) return _resElFull(m);
+  const st = resStats(m), el = document.createElement('div'); el.className = 'rcard';
+  const cats = CATS.map(([c, l]) => [c, l, m.res.items.filter(i => i.category === c).length]).filter(x => x[2]);
+  const ban = m.status === 'підтверджено' ? '<div class="okb">✓ Перевірено менеджером — це точна відповідь «Гарячої Точки».</div>' : isClient() ? '<div class="warnb"><b>Попередній підбір ШІ.</b> Менеджер перевірить і надасть точну відповідь.</div>' : '';
+  el.innerHTML = `${ban}<div class="rsum"><b>${esc(m.res.title)}</b><span>${st.n} позицій · ${st.ex} точно${st.an ? ` · ${st.an} аналог.` : ''}${st.miss ? ` · <em>${st.miss} не знайшов</em>` : ''}</span><strong>${fmt(Math.round(st.total))} грн</strong></div>
+    <div class="rlbl">Переглянути товари</div>
+    <div class="rcats">${cats.map(([c, l, n]) => `<button data-cat="${c}"><span>${l}</span><i>${n}</i></button>`).join('')}${m.opts?.length ? `<button data-opts class="ropt"><span>Додаткові опції</span><i>${m.opts.length}</i></button>` : ''}</div>
+    <div class="rlbl">Файли</div>
+    <div class="rfiles">
+      ${m.scheme ? `<button data-scheme class="rf"><b>🗺 Схема мереж</b><span>переглянути шари</span></button>` : ''}
+      <button data-pdf class="rf"><b>📄 PDF ${m.scheme ? '— альбом проєкту' : '— специфікація'}</b><span>${m.files?.pdf ? 'готовий — відкрити' : 'створити і зберегти'}</span></button>
+      <button data-xlsx class="rf"><b>📊 Excel</b><span>${m.files?.xlsx ? 'готовий — відкрити' : 'створити і зберегти'}</span></button>
+    </div>
+    ${m.files?.pdf || m.files?.xlsx ? `<div class="rlinks">${['pdf','xlsx'].filter(k => m.files[k]).map(k => `<a href="${m.files[k].url}" target="_blank" rel="noopener">${k === 'pdf' ? 'PDF' : 'Excel'}: відкрити</a><a href="${m.files[k].download}" target="_blank" rel="noopener">скачати</a>`).join('')}</div>` : ''}`;
+  el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => openResCat(m, b.dataset.cat));
+  const o = el.querySelector('[data-opts]'); if(o) o.onclick = () => { openResCat(m, m.res.tab || cats[0][0]); setTimeout(() => $('resHost')?.querySelector('.optbox')?.scrollIntoView({ block:'start' }), 80); };
+  const sc = el.querySelector('[data-scheme]'); if(sc) sc.onclick = () => openScheme(m);
+  el.querySelector('[data-pdf]').onclick = e => m.files?.pdf ? open(m.files.pdf.url, '_blank') : hpMakePDF(m, e.currentTarget);
+  el.querySelector('[data-xlsx]').onclick = e => m.files?.xlsx ? open(m.files.xlsx.url, '_blank') : hpMakeXlsx(m, e.currentTarget);
+  return el;
+};
+// довге пояснення ШІ — згорнуте під «Деталі»
+const _msgElC = msgEl;
+msgEl = function(m, idx){
+  const d = _msgElC(m, idx);
+  if(m.role === 'ai' && m.res && !m.typing && (m.text || '').length > 160){
+    const b = d.querySelector('.bub'); if(b){ const first = (m.text.split(/\n\n/)[0] || '').replace(/\*\*/g, '').slice(0, 160);
+      b.innerHTML = `<div>✅ Готово. ${esc(first)}${first.length >= 160 ? '…' : ''}</div><details class="more"><summary>Деталі і що уточнити</summary>${fmtText(m.text)}</details>`; } }
+  return d;
+};
+
+// ── 5. Файли: справжній PDF (html2canvas + jsPDF) і Excel — у Google Диск (посилання працює на будь-якому телефоні) + скачування ──
+const libs = {};
+const loadLib = src => libs[src] || (libs[src] = new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => { delete libs[src]; no(new Error('Не завантажилась бібліотека')); }; document.head.appendChild(s); }));
+const blobB64 = b => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.readAsDataURL(b); });
+function saveBlobLocal(blob, name){ try{ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }catch{} }
+async function hpUploadFile(m, kind, blob, name, mime){
+  try{ const r = await API('file_put', { name, mime, b64:await blobB64(blob), object_id:S.ctx.object?.id || '' });
+    m.files = { ...(m.files || {}), [kind]:r.file }; save(); if(m.calcId || S.ctx.object) try{ saveSoon(m); }catch{} return r.file; }
+  catch(e){ showErr('Файл створено, але не вдалося зберегти на Диск: ' + e.message + '. Він скачався на пристрій.'); return null; }
+}
+let _logoPng = null;
+async function hpLogoPNG(){ if(_logoPng !== null) return _logoPng;
+  try{ const img = new Image(); img.src = new URL('hp_logo.svg', location.href).href; await img.decode();
+    const c = document.createElement('canvas'); c.width = 1200; c.height = Math.round(1200 * 148.71 / 920.52); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); _logoPng = c.toDataURL('image/png'); }
+  catch{ _logoPng = ''; } return _logoPng; }
+async function hpMakePDF(m, btn){
+  const lbl = btn?.querySelector('span'), say = t => { if(lbl) lbl.textContent = t; };
+  if(btn) btn.disabled = true;
+  try{
+    say('завантажую інструменти…');
+    await Promise.all([loadLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'), loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')]);
+    const ifr = document.createElement('iframe'); ifr.style.cssText = 'position:fixed;left:-30000px;top:0;width:1600px;height:1200px;border:0;visibility:hidden';
+    document.body.appendChild(ifr);
+    const logo = await hpLogoPNG();
+    await new Promise(ok => { ifr.onload = ok; ifr.srcdoc = albumDoc(m).replace(/<img src="[^"]*hp_logo\.svg" alt="Гаряча Точка">/g, logo ? `<img src="${logo}" alt="Гаряча Точка">` : '<b class="lg">Гаряча Точка</b>'); });
+    const doc = ifr.contentDocument; try{ await doc.fonts.ready; }catch{}
+    await Promise.all([...doc.images].map(i => i.complete ? 1 : new Promise(ok => { i.onload = i.onerror = ok; })));
+    const sheets = [...doc.querySelectorAll('.sheet')], pdf = new window.jspdf.jsPDF({ orientation:'landscape', unit:'mm', format:'a3', compress:true });
+    for(let i = 0; i < sheets.length; i++){
+      say(`аркуш ${i + 1} з ${sheets.length}…`);
+      const c = await html2canvas(sheets[i], { scale:1.5, backgroundColor:'#ffffff', useCORS:true, logging:false, windowWidth:1600 });
+      if(i) pdf.addPage('a3', 'landscape'); pdf.addImage(c.toDataURL('image/jpeg', 0.88), 'JPEG', 0, 0, 420, 297);
+    }
+    pdf.setProperties({ title:m.res.title, author:'Гаряча Точка', creator:'Гаряча Точка' });
+    ifr.remove();
+    const blob = pdf.output('blob'), name = `Гаряча Точка — ${m.res.title}.pdf`.replace(/[\\/:*?"<>|]/g, ' ');
+    say('зберігаю…'); saveBlobLocal(blob, name);
+    await hpUploadFile(m, 'pdf', blob, name, 'application/pdf'); render();
+  }catch(e){ showErr('Не вдалося створити PDF: ' + (e.message || e)); say('спробувати ще раз'); }
+  if(btn) btn.disabled = false;
+}
+async function hpMakeXlsx(m, btn){
+  if(btn) btn.disabled = true; const keep = XLSX.writeFile; let cap = null;
+  try{ XLSX.writeFile = (wb, name) => { cap = { wb, name }; }; excel(m.res); }finally{ XLSX.writeFile = keep; }
+  if(!cap){ if(btn) btn.disabled = false; return; }
+  const blob = new Blob([XLSX.write(cap.wb, { bookType:'xlsx', type:'array' })], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  saveBlobLocal(blob, cap.name); await hpUploadFile(m, 'xlsx', blob, cap.name, blob.type); if(btn) btn.disabled = false; render();
+}
+
+// ── 6. Телефон: менше зайвого тексту, без важких ефектів ──
+document.body.classList.add('ux2');
+// фонові задачі (опції комплекту) не перемальовують увесь чат щосекунди
+const _rtUx = renderTyping; renderTyping = function(m){ if(S.chat.indexOf(m) < 0) return; _rtUx(m); };
 
 // ── Старт ──
 (function(){
