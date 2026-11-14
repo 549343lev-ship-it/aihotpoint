@@ -506,6 +506,49 @@ body:has(.sheet:not([hidden])) #mmCost{display:none}
 .survey{display:flex;flex-direction:column;gap:9px;border:1px solid var(--line);padding:10px;border-radius:4px}
 .survey summary{cursor:pointer;font-weight:700;color:var(--brand-ink);font-size:13.5px}
 button.sm{font-size:12px;padding:5px 10px}
+
+/* ── Нижнє меню, вікна, пошук, голос ── */
+#tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);position:relative;z-index:40}
+#tabbar[hidden]{display:none}
+#tabbar button,.ttabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding:7px 2px 6px;border-radius:0!important;position:relative}
+#tabbar svg{width:23px;height:23px}
+#tabbar button.on,.ttabs button.on{color:var(--brand-ink)}
+#tabbar button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;background:var(--brand)}
+.tb{position:absolute;top:3px;left:55%;background:var(--brand);color:#fff;font-style:normal;font-size:10px;border-radius:999px;padding:0 5px;min-width:16px;text-align:center}
+.ttabs{display:none}
+@media (min-width:900px){#tabbar{display:none!important}body.hasTabs .ttabs{display:flex;gap:2px;margin-right:auto}.ttabs button{flex-direction:row;font-size:13px;padding:7px 11px;gap:6px}.ttabs svg{width:18px;height:18px}.ttabs button.on{background:var(--tint)}.ttabs .tb{position:static}}
+body.hasTabs #sideBtn,body.hasTabs #cliBtn,body.hasTabs #repBtn,body.hasTabs #capsBtn,body.hasTabs #newBtn,body.hasTabs .otitle{display:none!important}
+@media (max-width:899px){body.hasTabs #mmCost{display:none}body.hasTabs footer{padding-bottom:8px}}
+#cliSheet.view{position:fixed;left:0;right:0;top:var(--vt,0px);bottom:var(--vb,0px);background:var(--bg);align-items:stretch;justify-content:center;z-index:35;animation:none}
+#cliSheet.view>div{max-width:840px;max-height:none;height:100%;border-radius:0;overflow:auto;padding:0 16px 28px;animation:none;-webkit-overflow-scrolling:touch}
+.vhead{display:grid;grid-template-columns:minmax(60px,auto) 1fr minmax(60px,auto);align-items:center;gap:8px;position:sticky;top:0;background:var(--bg);z-index:3;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:6px}
+.vhead b{text-align:center;font-size:16px}
+.vhead>:last-child{justify-self:end}
+.msheet{max-width:520px!important;border-radius:16px 16px 0 0!important;padding:6px 12px max(14px,env(safe-area-inset-bottom,0px))!important;gap:4px!important}
+.msheet button{text-align:left;padding:13px 14px;font-size:15px;font-weight:600}
+.grab{width:42px;height:4px;background:var(--line);border-radius:4px;margin:4px auto 6px}
+.sbar{display:flex;gap:6px;margin:4px 0 8px}
+.sbar input{flex:1;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg)}
+.sres{display:flex;flex-direction:column}
+.sgrp{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 4px}
+.srow{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:9px 0;font-size:13.5px}
+.sinfo{flex:1;min-width:0}
+.srow .code{font-family:var(--mono);color:var(--brand-ink);font-size:12px;cursor:copy;padding:1px 3px}
+.srow .code.ok{background:#E7F6EC}
+.srow b{white-space:nowrap;font-size:13px}
+.promos{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:560px}
+.promo{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-left:3px solid var(--brand);background:var(--surface);padding:9px 11px;text-decoration:none;color:var(--fg);font-size:13.5px}
+.promo span{color:var(--muted);font-size:12.5px}
+.promo.big{padding:14px}
+.mic svg{width:20px;height:20px}
+.mic.rec{color:#fff!important;background:#C62828!important;border-color:#C62828!important;animation:micp 1s infinite}
+@keyframes micp{50%{opacity:.6}}
+.help h3{font-size:15px;margin:16px 0 6px}
+.help ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.help .btn{margin-top:16px}
+#ideaT{font:inherit;font-size:15px;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg)}
+.mcard .row .btn{flex:1;text-align:center;text-decoration:none}
+.tbox{touch-action:pan-x pan-y pinch-zoom}
 </style>
 </head>
 <body>
@@ -521,6 +564,7 @@ button.sm{font-size:12px;padding:5px 10px}
     <button class="obtn" id="sideBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Мої чати</button>
     <button class="obtn" id="cliBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.5 3 5.2"/></svg><span id="cliBtnT">Клієнти</span><span class="cbadge" id="cliBadge" hidden></span></button>
     <button class="obtn" id="repBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Звіт</button>
+    <div class="ttabs" id="topTabs"></div>
     <span class="otitle"></span>
     <button class="obtn ghostw" id="capsBtn">Можливості</button>
     <button class="obtn ghostw" id="newBtn" hidden>+ Новий чат</button>
@@ -583,6 +627,8 @@ button.sm{font-size:12px;padding:5px 10px}
   <div class="legal">Ціни роздрібні на 05.07.2026, остаточні — у менеджера · 0-800-305-777</div>
   <input id="file" type="file" accept="image/*,application/pdf,.xlsx,.xls,.csv,.txt" hidden>
 </div></footer>
+<nav id="tabbar" hidden aria-label="Меню"></nav>
+<div class="sheet" id="moreSheet" hidden></div>
 
 <div class="sheet" id="tileSheet" hidden><div class="tileIn"><section class="tpanel" data-panel="project" hidden><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M8 21v-6h8v6M3 12h18"/></svg><h2>Розрахунок проекту</h2><p>Надішліть дизайн-проєкт у PDF або опишіть об’єкт. Я прийму системні рішення за регламентом майстра — ввід води, стояк, котел, техвузол — порахую метраж води, каналізації, теплої підлоги й кабелю і складу специфікацію з кодами з прайсу.</p><div class="row"><button class="btn" data-start="project">Почати</button><button data-ex="project">Приклад</button></div></section><section class="tpanel" data-panel="calc" hidden><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><h2>Розрахунок товару</h2><p>Фото рукопису майстра, рахунок іншого постачальника, Excel або список текстом. Підберу кожну позицію з прайсу «Гарячої Точки» з кодом 1С і порахую суму. Аналоги позначу, а чого немає — підсвічу. Результат — таблиця з кнопками для 1С та Excel.</p><div class="row"><button class="btn" data-start="calc">Почати</button><button data-ex="calc">Приклад</button></div></section><section class="tpanel" data-panel="pick" hidden><svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9 11h4M11 9v4"/></svg><h2>Індивідуальний пошук товарів</h2><p>Дизайн-радіатори, змішувачі, унітази, автоматика. Опишіть, що бажаєте: стиль, колір, розміри, підключення, бюджет. Запропоную 2–4 варіанти з цінами й посиланнями на сторінки товарів у виробника.</p><div class="row"><button class="btn" data-start="pick">Почати</button><button data-ex="pick">Приклад</button></div></section></div></div>
 <div class="sheet" id="capsSheet" hidden><div class="capsIn">
@@ -616,7 +662,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-13.7';
+const APP_VER = '2026-11-14.1';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -1054,10 +1100,10 @@ async function claude(messages, extra = {}){
   if(tools.length) body.tools = tools.map(t=>({type:'function', function:{name:t.name, description:t.description, parameters:t.input_schema}}));
   let d;
   if(viaProxy){
-    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), format:'openai', body})}); }
+    let res; try{ res = await fetch(PROXY_URL, {method:'POST', body:JSON.stringify({token:apiKey(), format:'openai', tag:S.run?.tag || 'llm', body})}); }
     catch(e){ throw new Error('Немає з\'єднання з проксі. Оновіть сторінку і спробуйте ще раз.'); }
     const w = await res.json().catch(() => ({})); d = w.data || {};
-    if(d._usage) countUsage(d._usage.in, d._usage.out);
+    if(d._usage){ countUsage(d._usage.in, d._usage.out); if(S.run){ S.run.tokens += d._usage.in + d._usage.out; S.run.usd += d._usage.usd || 0; S.run.calls++; } }
     if(w.status === 401){ try{localStorage.removeItem('hpuser')}catch{} mmGate('register'); throw new Error('Потрібна реєстрація.'); }
     if(w.status === 403){ mmGate('closed'); throw new Error('Доступ закрито. Зверніться до адміністратора.'); }
     if(w.status === 429) throw new Error('Забагато запитів. Зачекайте хвилину.');
@@ -1239,6 +1285,8 @@ async function exStructure(lines, said, wait){
 Кожен рядок нижче має номер i. Для КОЖНОГО рядка поверни позицію (або кілька, якщо в рядку кілька товарів через кому — з тим самим i). Рядок, що не є товаром (шапка, підсумок, реквізити, «разом», дата) — {"i":N,"skip":true}. Послуги/роботи — окрема позиція як є. Не об'єднуй різні рядки, не пропускай перехідники, крани, фітинги.
 Сленг розшифровуй за базою, бренд за пріоритетом бази вписуй у search. Вказівки клієнта щодо брендів і систем — обов'язкові.
 Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15.
+КІЛЬКІСТЬ: число після тире, «х», «по» або в кінці рядка — «труба 20 - 50 м» → qty 50, unit м; «коліно 20 - 10» → qty 10. Не плутай розмір з кількістю.
+ФІТИНГИ PPR (коліно, трійник, муфта, заглушка, перехід) мають лише діаметр — БЕЗ товщини стінки й без PN/Fiber: «коліно PPR 90° ф20 Ekoplastik», не «коліно 20х2.8». Товщина стінки і PN — лише в трубах. Труба PPR для води без уточнення — PN20.
 РЯДКИ:\n${part.map(x => `${x.i}: ${x.t}`).join('\n')}\n
 Поверни ТІЛЬКИ JSON: {"items":[{"i":0,"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С","alt":"другий запит іншими словами","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}`}], {max_tokens:12000, reasoning:'low'}))).items || [];
   const all = lines.map((t,i) => ({i, t})), parts = [];
@@ -1261,7 +1309,7 @@ async function extractList(file, said, wait){
   wait.phase = file ? 'Читаю файл' : 'Розбираю список';
   const lines = await exTranscribe(file, said, wait);
   if(!lines.length) return { items:[], reply:'' };
-  const metaP = claude([{role:'user', content:`Замовлення майстра (перші рядки):\n${lines.slice(0,60).join('\n')}\n${said?`Повідомлення клієнта: ${said.slice(0,1500)}\n`:''}\nПоверни ТІЛЬКИ JSON: {"reply":"1-2 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком або порожньо","brands":["бренди, які клієнт вимагає"]}`}], {max_tokens:3000, reasoning:'low'}).then(d => json(textOf(d))).catch(() => ({}));
+  const metaP = claude([{role:'user', content:`Замовлення майстра (перші рядки):\n${lines.slice(0,60).join('\n')}\n${said?`Повідомлення клієнта: ${said.slice(0,1500)}\n`:''}\nПоверни ТІЛЬКИ JSON: {"reply":"1-2 речення клієнту: що зрозумів, що варто уточнити","limits":"чого з цього не можу зробити чи розібрати і чому (нерозбірливо, нема розміру, не товар магазину…) і що надіслати для кращого результату; або порожньо","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком або порожньо","brands":["бренди, які клієнт вимагає"]}`}], {max_tokens:3000, reasoning:'low'}).then(d => json(textOf(d))).catch(() => ({}));
   const items = await exStructure(lines, said, wait);
   const meta = await metaP;
   return { ...meta, items, lines: lines.length, checklist: [] };
@@ -1277,12 +1325,12 @@ ${KB}
 Один рядок майстра = одна позиція (комплект не розкладай на деталі, нічого не дублюй, послуги/роботи лиши окремим рядком як є). Сленг розшифровуй за базою, бренд за пріоритетом бази вписуй у search.
 Вказівки клієнта щодо брендів і систем (напр. «пуш рафтек», «крани рафтек») — ОБОВ'ЯЗКОВІ: застосуй їх до відповідних позицій одразу (впиши бренд у need і search), не перепитуй.
 Поверни ТІЛЬКИ JSON:
-{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком, або порожньо","brands":["бренди, які клієнт вимагає, напр. RAFTEC"],"checklist":[{"rule":"","passed":true,"comment":""}],
+{"reply":"1-3 речення клієнту: що зрозумів, що варто уточнити","limits":"чого з запиту не можу зробити і чому, що надіслати для кращого результату; або порожньо","title":"коротка назва","prefs":"вказівки клієнта щодо брендів/систем одним рядком, або порожньо","brands":["бренди, які клієнт вимагає, напр. RAFTEC"],"checklist":[{"rule":"","passed":true,"comment":""}],
 "items":[{"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С: тип + розмір + бренд","alt":"другий запит іншими словами (синонім, рос. назва, без бренду)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
 ЧИСТОВА за дизайном: для раковини, змішувача, унітаза, тумби, дзеркала, мийки, душу впиши в need з візуалізації/опису колір і покриття (білий глянець, чорний матовий, хром, брашоване золото…), форму, монтаж (підвісний, накладний, на стільницю) і ширину в мм, напр. «умивальник накладний на стільницю, білий, прямокутний, ш 600».
 Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15. ${S.mode==='calc'?'checklist лиши порожнім.':''}`;
     const draft = S.mode === 'calc' ? await extractList(file, said, wait) : json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
-    const needs = (draft.items||[]).slice(0,400);
+    const needs = (draft.items||[]).slice(0,400); wait.n = needs.length;
     if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
     const brands = (draft.brands||[]).filter(b => typeof b==='string' && b.trim()).slice(0,4);
     const prefs = [hpPrefs(), draft.prefs, said.length < 600 ? said : ''].filter(Boolean).join(' | ');
@@ -1358,7 +1406,8 @@ ${KB}
     try{ cabFix(items, needs, S.mode === 'project'); }catch(e){ console.warn('cabFix', e); }
     const miss = items.filter(i=>i.code==='—').length, an = items.filter(i=>i.match==='analog').length;
     wait.typing=null;
-    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + (draft.lines ? `Рядків у замовленні: ${draft.lines}, позицій: ${needs.length}. ` : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
+    wait.limits = draft.limits || '';
+    wait.text = (draft.reply ? draft.reply+'\n\n' : '') + (draft.limits ? '**Чого не можу:** ' + draft.limits + '\n\n' : '') + (draft.lines ? `Рядків у замовленні: ${draft.lines}, позицій: ${needs.length}. ` : '') + `Підібрав ${items.length-miss} з ${items.length}: точних ${items.length-miss-an}, аналогів ${an}${miss?`, не знайшов ${miss}`:''}. Аналоги й не знайдені підсвічені — перевірте їх. Кількість можна змінити прямо в таблиці.`;
     wait.res = { title: draft.title||'Специфікація', items, checklist: draft.checklist||[], tab:(CATS.find(c=>items.some(i=>i.category===c[0]))||CATS[0])[0] };
     render(); save();
   } finally { clearInterval(tick); }
@@ -1370,7 +1419,7 @@ async function pick(file, wait){
     { name:'search_matrix', description:'Пошук в асортиментній матриці чистової (пріоритет продажу A→D, колір, форма, розміри, монтаж, сегмент, посилання на сайт/B2B виробника). Повертає: код | назва | бренд | пріоритет | колір | форма | монтаж | Ш×Г×В | сегмент | ціна | посилання | інше.',
       input_schema:{type:'object', properties:{type:{type:'string', enum:MX_TABS}, query:{type:'string', description:'слова: стиль, матеріал, особливості, бренд'}, color:{type:'string'}, shape:{type:'string'}, max_width:{type:'number'}, min_width:{type:'number'}, mount:{type:'string', description:'вид монтажу: накладний (на стільницю), врізний, меблевий, підвісний, підлоговий, настінний, прихований'}}, required:['type']} }];
   const msgs = hist();
-  msgs[0].content = `${RULES}\n${hpPrefs()}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + mount + max_width; вид монтажу — обов'язково: накладна раковина ≠ меблева ≠ врізна) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
+  msgs[0].content = `${RULES}\n${hpPrefs()}\n\nЗАРАЗ: клієнт хоче підібрати товар (дизайн-радіатори, змішувачі, унітази, душові системи тощо). Якщо запит розмитий — постав 2-3 уточнювальні питання (стиль, колір, розміри, підключення, бюджет). Якщо є фото, візуалізація чи дизайн-проєкт — СПЕРШУ для кожного видимого предмета чистової визнач: тип, колір і покриття (білий глянець/мат, чорний матовий, хром, брашоване золото, графіт…), форму (прямокутна, овальна, кругла, квадратна), монтаж (підвісний, підлоговий, накладний, на стільницю, вбудований), орієнтовну ширину, стиль; коротко напиши це клієнту. Потім шукай інструментом search_matrix (type + color + shape + mount + max_width; вид монтажу — обов'язково: накладна раковина ≠ меблева ≠ врізна) — асортиментна матриця з пріоритетом продажу: пропонуй спершу A, потім B, C; бренди — за матрицею брендів нижче. Чого нема в матриці — шукай search_catalog. Запропонуй 2-4 варіанти на предмет: назва, код, ціна, чому підходить до дизайну (колір, форма, розмір). Якщо чогось не можеш (нема в прайсі, мало даних, не видно на фото) — скажи прямо: чого саме, чому і що надіслати, щоб вийшло краще. Пропонуй лише те, що повернули інструменти; позицію «немає в прайсі» — тільки з приміткою «під замовлення». Посилання давай ЛИШЕ ті, що є в результатах search_matrix; не вигадуй посилань. Формат кожного пункту: код — назва — ціна — посилання (якщо є).\n\nМАТРИЦЯ БРЕНДІВ (бренд (сегмент) — що є у постачальника):\n${(S.mxBrands||'').slice(0,6000)} Поясни правила сумісності, якщо вони є. Без таблиць, короткими пунктами.\n\n---\n` + msgs[0].content;
   const last = msgs[msgs.length-1];
   last.content = [...fileBlocks(file), {type:'text', text: last.content + (file?.text?`\n\nВміст файлу ${file.name}:\n${file.text.slice(0,20000)}`:'')}];
   const base = msgs.length;
@@ -1981,7 +2030,7 @@ async function hpFromCard(){
 // ── 7. Звіт директора ──
 async function openReport(days){
   const box = cliSheet('<div class="small">Рахую звіт…</div>');
-  let r; try{ r = await API('report', { days: days || 7 }); }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  let r; try{ r = await API('report', { days: days || 7 }); S.lastReport = r; }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
   const u = x => x ? `${x.calls} · $${x.usd.toFixed(2)} (${(x.usd*S.usd).toFixed(0)} грн)` : '—';
   box.innerHTML = `<div class="row between"><b style="font-size:16px">Звіт директора</b><span class="row">${[1,7,30].map(d => `<button class="${d===r.days?'btn':''} sm" data-d="${d}">${d===1?'Сьогодні':d+' дн.'}</button>`).join('')}<button class="ghost" data-close>Закрити</button></span></div>
     <div class="small">ШІ сьогодні: ${u(r.usage.today)} · за місяць: ${u(r.usage.month)} · <a href="https://docs.google.com/spreadsheets/d/14j3iH2uDNCQgpRJKaIpjDJpevgnMZikzxTidPkwrnLQ/edit" target="_blank" rel="noopener">Дашборд у Таблиці ↗</a></div>
@@ -2029,6 +2078,293 @@ resEl = function(m){
 
 // Telegram-заготовка: клієнт/менеджер бачить, що сповіщення будуть через @hotpointassistant_bot
 const TG_BOT = 'hotpointassistant_bot';
+
+// ══ ЕТАП 3: два інтерфейси (клієнт / менеджер), нижнє меню, пошук, голос, час очікування, пропозиції ШІ, вартість розрахунку, кілька файлів ══
+const MAX_FILES = 20;
+const NEWS = [
+  { t:'Викладка RAFTEC у нашому магазині', d:'Труби PPR і PEX, фітинги Push і Compress, колектори, змішувальні вузли, обв’язка котла — усе можна подивитись і помацати на Зеленій, 238.', u:'https://youneedtoworkwithme.github.io/taras/#raftec' },
+  { t:'Новинки на сайті «Гарячої Точки»', d:'Каталог, акції та новинки виробників.', u:'https://hot-point.com.ua/' },
+];
+const isMobile = () => matchMedia('(max-width: 899px)').matches;
+
+// ── Кілька файлів за раз (до 20): об’єднуємо в один «пакет» для підбору ──
+async function takeMany(list){
+  const files = [...list].slice(0, MAX_FILES);
+  if(list.length > MAX_FILES) showErr(`Можна до ${MAX_FILES} файлів за раз — беру перші ${MAX_FILES}.`);
+  const parts = [];
+  for(const f of files){ await take(f); if(S.file) parts.push(S.file); }
+  if(!parts.length) return;
+  const one = parts.length === 1 ? parts[0] : {
+    name: parts.length + ' файлів: ' + parts.map(p => p.name).join(', '),
+    images: parts.flatMap(p => p.images || []).slice(0, 40),
+    text: parts.filter(p => p.text).map(p => `# ${p.name}\n${p.text}`).join('\n'),
+    pdfText: parts.filter(p => p.pdfText).map(p => p.pdfText).join('\n'),
+    raws: parts.map(p => p.raw).filter(Boolean), pdf:null };
+  if(parts.length === 1) one.raws = [one.raw].filter(Boolean);
+  // текст з PDF і Excel важливіший за фото сторінок; фото сканів лишаються
+  S.file = one; renderAtt();
+}
+$('file').multiple = true;
+$('file').onchange = e => { e.target.files.length && takeMany(e.target.files); e.target.value = ''; };
+document.body.ondrop = e => { e.preventDefault(); e.dataTransfer.files.length && takeMany(e.dataTransfer.files); };
+hpUpload = async function(file){
+  if(!S.ctx.object) return null; const ids = [];
+  for(const raw of (file?.raws || [file?.raw]).filter(Boolean)){ if(raw.size > 25e6) continue;
+    try{ const r = await API('file_upload', { object_id:S.ctx.object.id, name:raw.name, mime:raw.type, b64: await b64(raw) }); ids.push(r.file.id); }catch{} }
+  return ids.length ? { id: ids.join(',') } : null;
+};
+
+// ── Вартість кожного розрахунку: токени і $ рахуємо під час запиту ──
+S.run = null;
+function runStart(){ S.run = { tokens:0, usd:0, calls:0, t0:Date.now(), tag:'calc:' + Date.now().toString(36) }; }
+hpSaveCalc = async function(m, extra = {}){
+  if(!S.ctx.object || !m.res) return;
+  const req = S.chat[S.chat.indexOf(m) - 1] || {};
+  const data = { mode:S.mode, request:req.text || '', fileName:req.att || '', fileId:m.fileId || '', reply:m.text || '', res:{ ...m.res }, cost:m.cost || null };
+  const cost = !m.costSaved && m.cost ? { tokens:m.cost.tokens, usd:m.cost.usd } : null;
+  try{ const r = await API('calc_save', { calc:{ id:m.calcId, object_id:S.ctx.object.id, title:m.res.title, mode:S.mode, status:extra.status, data, cost } });
+    if(cost) m.costSaved = true; m.calcId = r.calc.id; m.status = r.calc.status; m.version = r.calc.version; save(); return r.calc;
+  }catch(e){ showErr('Не зберіглось у папку клієнта: ' + e.message); }
+};
+
+// ── Час очікування: вчимося на попередніх розрахунках цього браузера ──
+const ETA = Object.assign({ calc:{ base:20, per:3 }, project:{ base:170, per:0 }, pick:{ base:60, per:0 } }, ls.get('hpeta') || {});
+function etaLeft(m){
+  if(!m.t0) return '';
+  const e = ETA[m.mode || S.mode] || ETA.calc, est = e.base + e.per * (m.n || 0), left = Math.round(est - (Date.now() - m.t0) / 1000);
+  return left > 5 ? ` · ≈ ще ${left > 90 ? Math.round(left / 60) + ' хв' : left + ' с'}` : ' · майже готово';
+}
+function etaLearn(m){
+  if(!m.t0) return; const dur = (Date.now() - m.t0) / 1000, k = m.mode || S.mode, e = ETA[k] || (ETA[k] = { base:20, per:0 });
+  if(m.n && k === 'calc') e.per = Math.max(0.5, Math.min(15, e.per * 0.7 + ((dur - e.base) / m.n) * 0.3)); else e.base = Math.round(e.base * 0.7 + dur * 0.3);
+  ls.set('hpeta', ETA);
+}
+// поки ШІ думає — підказка, візитівка менеджера, новинки
+function promoHTML(){
+  const mgr = S.me?.manager, n = NEWS[Math.floor(Date.now() / 20000) % NEWS.length];
+  const a = isClient() && mgr?.url ? `<a class="promo" href="${mgr.url}" target="_blank" rel="noopener"><b>Поки ШІ рахує — познайомтесь з Вашим менеджером</b><span>${esc(mgr.name)} · візитівка ↗</span></a>` : '';
+  return a + `<a class="promo" href="${n.u}" target="_blank" rel="noopener"><b>${esc(n.t)}</b><span>${esc(n.d)}</span></a>`;
+}
+renderTyping = function(m){
+  const node = $('msgs').querySelector(`.msg[data-i="${S.chat.indexOf(m)}"]`), el = node?.querySelector('.tt');
+  if(!el) return render();
+  el.textContent = m.typing + etaLeft(m);
+  if(!node.querySelector('.promos')){ const d = document.createElement('div'); d.className = 'promos'; d.innerHTML = promoHTML(); node.appendChild(d); }
+};
+
+// ── Обгортка надсилання: старт заміру, вартість, навчання часу, журнал «не зміг» ──
+const _send = send;
+send = async function(){
+  if(S.busy) return;
+  const before = S.chat.length; runStart();
+  const was = S.chat.length;
+  const p = _send();
+  const watch = setInterval(() => { const w = S.chat[S.chat.length - 1]; if(S.chat.length > was && w?.role === 'ai' && !w.t0){ w.t0 = S.run?.t0 || Date.now(); w.mode = S.mode; } }, 100);
+  await p; clearInterval(watch);
+  const w = S.chat[S.chat.length - 1];
+  if(w && S.chat.length > before && w.role === 'ai'){
+    if(S.run && S.run.calls){ w.cost = { tokens:S.run.tokens, usd:S.run.usd, calls:S.run.calls, sec:Math.round((Date.now() - S.run.t0) / 1000) }; etaLearn(w); }
+    logLimits(w); render(); save();
+  }
+  S.run = null;
+};
+$('send').onclick = send;
+$('txt').onkeydown = e => { if(e.key==='Enter' && !e.shiftKey && !e.isComposing && matchMedia('(hover:hover)').matches){ e.preventDefault(); send(); } };
+
+// «ШІ не зміг»: не знайдені позиції й обмеження — у вкладку «Пропозиції ШІ», щоб покращувати
+function logLimits(m){
+  const items = [];
+  for(const it of m.res?.items || []) if(it.code === '—') items.push({ kind:'не знайдено', text:String(it.name).replace(/^НЕ ЗНАЙДЕНО:\s*/, ''), context:it.note || '' });
+  if(m.limits) items.push({ kind:'обмеження', text:m.limits });
+  if(/щось пішло не так/i.test(m.text || '')) items.push({ kind:'помилка', text:m.text });
+  if(items.length) API('suggest', { items:items.map(x => ({ ...x, calc:m.calcId || '' })) }).catch(() => {});
+}
+function ideaForm(ctx){
+  const box = viewOpen(`<div class="vhead"><button class="ghost" data-back>←</button><b>Пропозиція / помилка ШІ</b><span></span></div>
+    <div class="cform"><p class="small">Опишіть, що ШІ зробив не так або чого Вам бракує. Ми збираємо це, щоб навчити помічника.</p>
+    <textarea id="ideaT" rows="5" placeholder="напр.: не розпізнав «американку 1/2»; хочу бачити фото товару; хотілось би…"></textarea>
+    <button class="btn" id="ideaGo">Надіслати</button><div class="small" id="ideaOk"></div></div>`);
+  box.querySelector('[data-back]').onclick = navBack;
+  $('ideaGo').onclick = async () => { const t = $('ideaT').value.trim(); if(!t) return;
+    $('ideaGo').disabled = true; try{ await API('suggest', { kind:'від користувача', text:t, context:ctx || '' }); $('ideaOk').textContent = 'Дякуємо! Записали.'; $('ideaT').value = ''; }catch(e){ $('ideaOk').textContent = e.message; } $('ideaGo').disabled = false; };
+}
+
+// ── Повноекранні вікна з історією: свайп вправо — назад ──
+const NAV = [];
+function viewOpen(html){ const v = $('cliSheet'); v.classList.add('view'); return cliSheet(html); }
+function closeView(){ $('cliSheet').hidden = true; NAV.length = 0; tabsMark(); }
+function navBack(){ NAV.pop(); const p = NAV.pop(); if(p) p[0](...p[1]); else closeView(); }
+function tracked(fn){ const w = function(...a){ if(NAV[NAV.length - 1]?.[0] !== w || JSON.stringify(NAV[NAV.length - 1]?.[1]) !== JSON.stringify(a)) NAV.push([w, a]); return fn(...a); }; return w; }
+openClients = tracked(openClients); openClient = tracked(openClient); openReport = tracked(openReport); clientForm = tracked(clientForm); objectForm = tracked(objectForm);
+const _cliSheet = cliSheet;
+cliSheet = function(html){ const el = _cliSheet(html); $('cliSheet').classList.add('view'); tabsMark(); return el; };
+(() => { let x0 = null, y0 = 0; const v = $('cliSheet');
+  v.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; }, { passive:true });
+  v.addEventListener('touchend', e => { if(x0 === null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if(dx > 80 && Math.abs(dy) < 60 && x0 < 60) navBack(); x0 = null; }, { passive:true }); })();
+// «Закрити» у вікнах — повернення до чату
+document.addEventListener('click', e => { if(e.target.closest('#cliSheet [data-close]')){ e.stopPropagation(); setTimeout(closeView); } }, true);
+
+// ── Нижнє меню (на телефоні) / верхні вкладки (на комп’ютері) ──
+const TABS_STAFF = [['chat','Підбір','M4 6h16M4 12h10M4 18h7'], ['clients','Клієнти','M9 8a3.5 3.5 0 1 0 0-.1M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.5 3 5.2'],
+  ['search','Пошук','M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM16 16l5 5'], ['report','Звіт','M4 20V10M10 20V4M16 20v-7M22 20H2'], ['more','Ще','M5 12h.01M12 12h.01M19 12h.01']];
+const TABS_CLIENT = [['chat','Запит','M4 6h16M4 12h10M4 18h7'], ['objects','Об’єкти','M3 21V8l9-5 9 5v13M9 21v-6h6v6'], ['search','Пошук','M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM16 16l5 5'],
+  ['manager','Менеджер','M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4 4-6 8-6s7 2 8 6'], ['more','Ще','M5 12h.01M12 12h.01M19 12h.01']];
+S.tab = 'chat';
+function tabsRender(){
+  if(!S.me) return;
+  const list = (isClient() ? TABS_CLIENT : TABS_STAFF).filter(t => t[0] !== 'report' || S.me.role === 'директор');
+  const html = list.map(([k, l, d]) => `<button data-tab="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg><span>${l}</span>${k === 'clients' ? '<i class="tb" id="tbBadge" hidden></i>' : ''}</button>`).join('');
+  $('tabbar').innerHTML = html; $('topTabs').innerHTML = html; $('tabbar').hidden = false; document.body.classList.add('hasTabs');
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => tabGo(b.dataset.tab));
+  tabsMark(); badges();
+}
+function tabsMark(){ const on = $('cliSheet').hidden ? 'chat' : S.tab; document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === on)); }
+function badges(){ const n = (S.inbox || []).length; document.querySelectorAll('#tbBadge').forEach(x => { x.textContent = n || ''; x.hidden = !n; }); }
+function tabGo(k){
+  startWork(); S.tab = k; NAV.length = 0;
+  if(k === 'chat'){ closeView(); $('txt').focus({ preventScroll:true }); }
+  else if(k === 'clients') openClients();
+  else if(k === 'objects') openClient(S.ctx.client?.id || S.me.client?.id);
+  else if(k === 'search') openSearch();
+  else if(k === 'report') openReport(7);
+  else if(k === 'manager') openManager();
+  else if(k === 'more') moreMenu();
+  tabsMark();
+}
+const _applyBoot = applyBoot;
+applyBoot = function(b, fromCache){ _applyBoot(b, fromCache); tabsRender(); badges(); };
+
+// «Ще» — розгортне меню знизу
+function moreMenu(){
+  const sh = $('moreSheet'), items = [
+    ['help', 'Що вміє ШІ і як отримати кращий результат'], ['chats', 'Мої чати (у цьому браузері)'], ['news', 'Новинки і викладки'],
+    ['idea', 'Повідомити про помилку / запропонувати'], ...(S.me?.role === 'директор' ? [['ideas', 'Пропозиції й помилки ШІ (журнал)']] : []), ['out', 'Вийти']];
+  sh.innerHTML = `<div class="msheet"><div class="grab"></div>${items.map(([k, l]) => `<button data-m="${k}">${l}</button>`).join('')}<button class="ghost" data-m="x">Скасувати</button></div>`;
+  sh.hidden = false;
+  sh.onclick = e => { const b = e.target.closest('[data-m]'); if(e.target === sh || b?.dataset.m === 'x'){ sh.hidden = true; S.tab = 'chat'; tabsMark(); return; } if(!b) return; sh.hidden = true;
+    const k = b.dataset.m; S.tab = 'more';
+    if(k === 'help') openHelp(); else if(k === 'chats'){ closeView(); openSide(); } else if(k === 'news') openNews(); else if(k === 'idea') ideaForm('меню');
+    else if(k === 'ideas') openIdeas(); else if(k === 'out'){ try{ localStorage.removeItem('hpuser'); localStorage.removeItem('hpboot'); }catch{} location.reload(); } };
+}
+
+// ── Пошук по «сайту»: товари (прайс + матриця), для менеджера ще й клієнти ──
+function openSearch(q0){
+  S.tab = 'search';
+  const box = viewOpen(`<div class="vhead"><span></span><b>Пошук</b><button class="ghost" data-close>Закрити</button></div>
+    <div class="sbar"><input type="search" id="sQ" placeholder="${isClient() ? 'Товар, код, бренд…' : 'Товар, код, бренд або клієнт…'}" value="${esc(q0||'')}" autocomplete="off"><button class="ic ghost mic" data-mic="sQ" aria-label="Голосом">${MIC_SVG}</button></div>
+    <div id="sRes" class="sres"><div class="small">Напишіть або скажіть, що шукаєте: «кран 1/2 RAFTEC», «унітаз підвісний rimless», «00000098448».</div></div>`);
+  const inp = $('sQ'); let tm;
+  const run = () => { const q = inp.value.trim(); if(q.length < 2) return;
+    const cl = isStaff() && S.clients ? S.clients.filter(c => (c.name + ' ' + c.phone).toLowerCase().includes(q.toLowerCase())).slice(0, 8) : [];
+    const goods = search(q, 25), mx = mxFind({ query:q, type:'' }, 8).filter(m => m.it && !goods.some(g => g[0] === m.it[0]));
+    const row = c => `<div class="srow"><div class="sinfo"><span class="code" data-copy="${c[0]}">${c[0]}</span> ${esc(c[2])}${mxTag(c) ? `<div class="note">${esc(mxTag(c).replace(/^ \| /,''))}</div>` : ''}</div><b>${fmt(uah(c))} грн</b>${lastRes() ? `<button class="sm" data-add="${c[0]}">+ в розрахунок</button>` : ''}</div>`;
+    $('sRes').innerHTML = (cl.length ? `<div class="sgrp">Клієнти</div>` + cl.map(c => `<div class="citem" data-cl="${c.id}"><div class="ct"><b>${esc(c.name)}</b><span>${esc(c.phone)}</span></div></div>`).join('') : '')
+      + (mx.length ? `<div class="sgrp">З асортиментної матриці (пріоритет)</div>` + mx.map(m => row(m.it)).join('') : '')
+      + `<div class="sgrp">Прайс · ${goods.length}</div>` + (goods.map(row).join('') || '<div class="small">Нічого не знайшов. Спробуйте інакше: тип + розмір + бренд.</div>');
+    $('sRes').querySelectorAll('[data-cl]').forEach(d => d.onclick = () => openClient(d.dataset.cl));
+    $('sRes').querySelectorAll('[data-copy]').forEach(d => d.onclick = () => navigator.clipboard.writeText(d.dataset.copy).then(() => { d.classList.add('ok'); setTimeout(() => d.classList.remove('ok'), 1200); }).catch(() => {}));
+    $('sRes').querySelectorAll('[data-add]').forEach(b => b.onclick = () => addToLast(b.dataset.add, b));
+  };
+  inp.oninput = () => { clearTimeout(tm); tm = setTimeout(run, 220); }; if(q0) run(); setTimeout(() => inp.focus(), 60);
+}
+function lastRes(){ for(let i = S.chat.length - 1; i >= 0; i--) if(S.chat[i].res) return S.chat[i]; return null; }
+function addToLast(code, btn){
+  const m = lastRes(); if(!m) return; const c = S.cat.find(x => x[0] === code); if(!c) return;
+  m.res.items.push({ code:c[0], art:c[1], name:c[2], qty:1, unit:c[3], match:'exact', category:catOf(c[0]), price:Math.round(uah(c)*100)/100, note:'додано з пошуку' });
+  save(); if(m.calcId || S.ctx.object) saveSoon(m); btn.textContent = 'Додано ✓'; btn.disabled = true; render();
+}
+
+// ── «Що вміє ШІ» — можливості, обмеження, поради ──
+function openHelp(){
+  const box = viewOpen(`<div class="vhead"><button class="ghost" data-back>←</button><b>Що вміє ШІ</b><span></span></div><div class="help">
+    <h3>Що вмію</h3><ul>
+      <li><b>Порахувати список</b>: фото рукопису, рахунок іншого постачальника, Excel, PDF, текст. До ${MAX_FILES} файлів за раз.</li>
+      <li><b>Підібрати чистову</b> за описом або фото: колір, форма, монтаж, розмір — з асортиментної матриці за пріоритетом.</li>
+      <li><b>Знайти аналог</b>, якщо товару нема або майстер написав інший бренд.</li>
+      <li><b>Колекторна шафа</b> за шириною, <b>гільзи</b> до PUSH, вставки, термоголовки — рахую сам.</li>
+      <li><b>Проєкт мереж</b> за дизайн-проєктом — бета: дає чернетку, менеджер обов’язково перевіряє.</li></ul>
+    <h3>Чого поки не вмію</h3><ul>
+      <li>Не бачу <b>залишків на складі</b> і <b>Ваших знижок</b> — ціни роздрібні, точну ціну дає менеджер.</li>
+      <li>Не бачу <b>фото товарів</b> — підбираю за назвою й характеристиками.</li>
+      <li>Погано читаю <b>креслення без розмірів</b> і дуже нерозбірливий почерк — такі рядки позначу.</li>
+      <li>Можу помилитись — тому кожен підбір <b>перевіряє менеджер</b>.</li></ul>
+    <h3>Як отримати кращий результат</h3><ul>
+      <li>Один рядок — одна позиція з кількістю: «Трійник PPR 25х20х25 — 6 шт».</li>
+      <li>Пишіть систему і бренд одразу: «пайка Ekoplastik», «PUSH RAFTEC», «крани PLM».</li>
+      <li>Фото — рівно, при денному світлі, весь аркуш у кадрі; кілька аркушів — кількома файлами.</li>
+      <li>Для чистової додайте візуалізацію або опишіть: колір, форма, монтаж, ширина.</li>
+      <li>Якщо щось не так — натисніть «Повідомити про помилку»: так ШІ навчається.</li></ul>
+    <button class="btn" data-idea>Повідомити про помилку / запропонувати</button></div>`);
+  box.querySelector('[data-back]').onclick = navBack; box.querySelector('[data-idea]').onclick = () => ideaForm('довідка');
+}
+openHelp = tracked(openHelp);
+function openNews(){
+  const box = viewOpen(`<div class="vhead"><button class="ghost" data-back>←</button><b>Новинки</b><span></span></div><div class="clist">${NEWS.map(n => `<a class="promo big" href="${n.u}" target="_blank" rel="noopener"><b>${esc(n.t)}</b><span>${esc(n.d)}</span></a>`).join('')}</div>`);
+  box.querySelector('[data-back]').onclick = navBack;
+}
+openNews = tracked(openNews);
+function openManager(){
+  S.tab = 'manager'; const m = S.me?.manager;
+  const box = viewOpen(`<div class="vhead"><span></span><b>Мій менеджер</b><button class="ghost" data-close>Закрити</button></div>
+    ${m ? `<div class="ccard mcard"><b style="font-size:18px">${esc(m.name)}</b><div class="small">«Гаряча Точка», Львів, вул. Зелена, 238 · Пн–Пт 09:00–18:00</div>
+      <div class="row"><a class="btn" href="tel:${esc(m.phone)}">Подзвонити</a><a class="btn" href="viber://chat?number=${encodeURIComponent(m.phone.replace(/[^\d+]/g,''))}">Viber</a>${m.url ? `<a class="btn" href="${m.url}" target="_blank" rel="noopener">Візитівка ↗</a>` : ''}</div></div>`
+      : `<div class="ccard"><b>Менеджера ще не призначено</b><div class="small">Щойно надішлете перший запит — менеджер «Гарячої Точки» візьме Вас у роботу. Телефон: <a href="tel:0800305777">0-800-305-777</a>.</div></div>`}
+    <div class="sgrp">Новинки</div>${NEWS.map(n => `<a class="promo" href="${n.u}" target="_blank" rel="noopener"><b>${esc(n.t)}</b><span>${esc(n.d)}</span></a>`).join('')}`);
+}
+async function openIdeas(){
+  const box = viewOpen('<div class="small">Завантажую…</div>'); let r;
+  try{ r = await API('ideas'); }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  box.innerHTML = `<div class="vhead"><button class="ghost" data-back>←</button><b>Пропозиції й помилки ШІ · ${r.ideas.length}</b><span></span></div>
+    <div class="clist">${r.ideas.map(x => `<div class="rule"><div style="flex:1"><b>${esc(x['Тип'])}</b> · ${esc(x['Що'])}<div class="note">${dt(x['Дата'])} · ${esc(x['Пошта'])}${x['Контекст'] ? ' · ' + esc(String(x['Контекст']).slice(0,120)) : ''}</div></div></div>`).join('') || '<div class="small">Поки порожньо.</div>'}</div>`;
+  box.querySelector('[data-back]').onclick = navBack;
+}
+openIdeas = tracked(openIdeas);
+
+// ── Звіт: + найдорожчі розрахунки і пропозиції ──
+const _openReportRaw = openReport;
+openReport = tracked(async function(days){
+  await _openReportRaw(days); const r = S.lastReport; if(!r) return;
+  const host = $('cliBody'); if(!host || !r.costly) return;
+  host.insertAdjacentHTML('beforeend', `<details><summary>Вартість ШІ по розрахунках · ${r.costly.length}</summary>${r.costly.map(k => `<div class="rule"><div style="flex:1"><b>${esc(k.title)}</b> · ${esc(k.client)}<div class="note">${esc(k.manager)} · ${k.items} поз. · ${Math.round(k.tokens/1000)} тис. токенів</div></div><b>$${k.usd.toFixed(3)}</b></div>`).join('') || '<div class="small">Ще немає.</div>'}</details>
+    <button data-ideas>Пропозиції й помилки ШІ · ${r.ideas || 0}</button>`);
+  host.querySelector('[data-ideas]').onclick = () => openIdeas();
+});
+
+// ── Голосовий ввід (Chrome / Android / Edge; на iPhone — через клавіатуру) ──
+const MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recNow = null;
+function micToggle(targetId, btn){
+  if(!SR){ showErr('Голосовий ввід у цьому браузері недоступний. На iPhone натисніть мікрофон на клавіатурі.'); return; }
+  if(recNow){ recNow.stop(); return; }
+  const el = $(targetId), base = el.value ? el.value.replace(/\s*$/, ' ') : '', r = new SR();
+  r.lang = 'uk-UA'; r.interimResults = true; r.continuous = true;
+  r.onresult = e => { let t = ''; for(const x of e.results) t += x[0].transcript; el.value = base + t; el.dispatchEvent(new Event('input')); if(targetId === 'txt') grow(); };
+  r.onend = () => { recNow = null; btn.classList.remove('rec'); };
+  r.onerror = e => { if(e.error === 'not-allowed') showErr('Дозвольте доступ до мікрофона в браузері.'); };
+  recNow = r; btn.classList.add('rec'); r.start();
+}
+(() => { const b = document.createElement('button'); b.className = 'ic ghost mic'; b.id = 'micBtn'; b.title = 'Сказати голосом'; b.setAttribute('aria-label', 'Голосовий ввід'); b.innerHTML = MIC_SVG;
+  $('send').before(b); b.onclick = () => micToggle('txt', b); })();
+document.addEventListener('click', e => { const b = e.target.closest('[data-mic]'); if(b) micToggle(b.dataset.mic, b); });
+
+// ── Результат: вартість ШІ для менеджера, кнопка «ШІ помилився» ──
+const _resEl2 = resEl;
+resEl = function(m){
+  const el = _resEl2(m);
+  const foot = document.createElement('div'); foot.className = 'row between';
+  foot.innerHTML = `${isStaff() && m.cost ? `<span class="small">ШІ на цей розрахунок: ${Math.round(m.cost.tokens/1000)} тис. токенів · $${m.cost.usd.toFixed(3)} (${(m.cost.usd*S.usd).toFixed(2)} грн) · ${m.cost.calls} запит. · ${m.cost.sec} с</span>` : '<span></span>'}<button class="ghost sm" data-bad>ШІ помилився? Напишіть</button>`;
+  foot.querySelector('[data-bad]').onclick = () => { startWork(); ideaForm(`розрахунок «${m.res.title}» ${m.calcId || ''}`); };
+  el.appendChild(foot); return el;
+};
+
+// ── Розмітка: вікна між шапкою і нижнім меню ──
+function layoutVars(){
+  const h = document.querySelector('header'), tb = $('tabbar'), st = document.documentElement.style;
+  st.setProperty('--vt', isMobile() ? '0px' : (h ? h.getBoundingClientRect().bottom : 0) + 'px');
+  st.setProperty('--vb', tb && !tb.hidden && isMobile() ? tb.getBoundingClientRect().height + 'px' : '0px');
+}
+addEventListener('resize', layoutVars); setInterval(layoutVars, 1500); setTimeout(layoutVars, 300);
 
 // ── Старт ──
 (function(){
