@@ -520,7 +520,9 @@ button.sm{font-size:12px;padding:5px 10px}
 body.hasTabs #sideBtn,body.hasTabs #cliBtn,body.hasTabs #repBtn,body.hasTabs #capsBtn,body.hasTabs #newBtn,body.hasTabs .otitle{display:none!important}
 @media (max-width:899px){body.hasTabs #mmCost{display:none}body.hasTabs footer{padding-bottom:8px}}
 #cliSheet.view{position:fixed;left:0;right:0;top:var(--vt,0px);bottom:var(--vb,0px);background:var(--bg);align-items:stretch;justify-content:center;z-index:35;animation:none}
-#cliSheet.view>div{max-width:840px;max-height:none;height:100%;border-radius:0;overflow:auto;padding:0 16px 28px;animation:none;-webkit-overflow-scrolling:touch}
+#cliSheet.view{align-items:stretch!important}
+#cliSheet.view>div::before{display:none!important}
+#cliSheet.view>div{max-width:840px;max-height:none!important;height:100%;padding-top:0!important;border-radius:0;overflow:auto;padding:0 16px 28px;animation:none;-webkit-overflow-scrolling:touch}
 .vhead{display:grid;grid-template-columns:minmax(60px,auto) 1fr minmax(60px,auto);align-items:center;gap:8px;position:sticky;top:0;background:var(--bg);z-index:3;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:6px}
 .vhead b{text-align:center;font-size:16px}
 .vhead>:last-child{justify-self:end}
@@ -662,7 +664,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-14.1';
+const APP_VER = '2026-11-14.2';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -901,7 +903,7 @@ async function loadMatrices(){
   // Код є не в усіх рядках матриці → дозв'язуємо: модельний код з назви (швидко), потім назва (у фоні, суворо)
   const nz = s => String(s||'').toLowerCase().replace(/[\s\-_.\/]/g,''), byN = new Map(); for(const x of S.cat) if(x[1]) byN.set(nz(x[1]), x);
   for(const m of all){ if(m.it) continue;
-    for(const a of (m.name.match(/\b[A-Z0-9][A-Z0-9\-.\/]{3,}\b/g)||[]).reverse()){ const r = byN.get(nz(a)) || search(a,1)[0]; if(r && nz(r[1]+r[2]).includes(nz(a))){ m.it = r; break; } } }
+    for(const a of (m.name.match(/\b[A-Z0-9][A-Z0-9\-.\/]{4,}\b/g)||[]).filter(a => /[A-Z]/.test(a) && /\d/.test(a)).reverse()){ const r = byN.get(nz(a)) || search(a,1)[0]; if(r && nz(r[1]+r[2]).includes(nz(a))){ m.it = r; break; } } }
   S.mx = all; S.mxBy = new Map(all.filter(m => m.it).map(m => [m.it[0], m]));
   S.mxStat = { rows: all.length, inPrice: S.mxBy.size, failed };
   const rest = all.filter(m => !m.it); let k = 0;
@@ -2017,7 +2019,8 @@ async function hpFromCard(){
   if(qs.get('from') !== 'card' || hpFromCard.done) return; hpFromCard.done = true;
   const p = await hpPendingGet(); if(!p) return;
   startWork(); setMode('calc');
-  if(p.file) await take(new File([p.file], p.name || 'файл', { type:p.type || p.file.type }));
+  if(p.files?.length) await takeMany(p.files.map(x => new File([x.blob], x.name || 'файл', { type:x.type || x.blob.type })));
+  else if(p.file) await take(new File([p.file], p.name || 'файл', { type:p.type || p.file.type }));
   $('txt').value = p.text || 'Порахуйте, будь ласка, мій список'; grow();
   if(isClient() && !S.ctx.object){
     try{ const r = await API('objects', { client_id:'' }); let o = r.objects.find(x => x.name === 'Запити з візитівки');
@@ -2256,7 +2259,7 @@ function openSearch(q0){
   const inp = $('sQ'); let tm;
   const run = () => { const q = inp.value.trim(); if(q.length < 2) return;
     const cl = isStaff() && S.clients ? S.clients.filter(c => (c.name + ' ' + c.phone).toLowerCase().includes(q.toLowerCase())).slice(0, 8) : [];
-    const goods = search(q, 25), mx = mxFind({ query:q, type:'' }, 8).filter(m => m.it && !goods.some(g => g[0] === m.it[0]));
+    const goods = search(q, 25), mx = mxKind(q) ? mxFind({ query:q, type:mxKind(q) }, 8).filter(m => m.it && !goods.some(g => g[0] === m.it[0])) : [];
     const row = c => `<div class="srow"><div class="sinfo"><span class="code" data-copy="${c[0]}">${c[0]}</span> ${esc(c[2])}${mxTag(c) ? `<div class="note">${esc(mxTag(c).replace(/^ \| /,''))}</div>` : ''}</div><b>${fmt(uah(c))} грн</b>${lastRes() ? `<button class="sm" data-add="${c[0]}">+ в розрахунок</button>` : ''}</div>`;
     $('sRes').innerHTML = (cl.length ? `<div class="sgrp">Клієнти</div>` + cl.map(c => `<div class="citem" data-cl="${c.id}"><div class="ct"><b>${esc(c.name)}</b><span>${esc(c.phone)}</span></div></div>`).join('') : '')
       + (mx.length ? `<div class="sgrp">З асортиментної матриці (пріоритет)</div>` + mx.map(m => row(m.it)).join('') : '')
