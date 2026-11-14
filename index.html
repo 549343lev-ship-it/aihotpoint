@@ -2145,10 +2145,20 @@ async function hpSaveCalc(m, extra = {}){
 }
 const saveSoon = (() => { const t = new Map(); return m => { clearTimeout(t.get(m)); t.set(m, setTimeout(() => hpSaveCalc(m).then(() => { const el = $('msgs').querySelector(`.msg[data-i="${S.chat.indexOf(m)}"] .saved`); if(el) el.textContent = `Збережено · v${m.version||1}`; }), 1200)); }; })();
 async function hpAfterSend(file, wait){
-  if(!S.ctx.object || !(wait.res || wait.text)) return;
-  if(file) wait.fileId = (await hpUpload(file))?.id || '';
-  if(wait.res){ await hpSaveCalc(wait); renderStream(wait); }
-  hpInbox();
+  if(S.ctx.object && (wait.res || wait.text)){
+    if(file) wait.fileId = (await hpUpload(file))?.id || '';
+    if(wait.res){ await hpSaveCalc(wait); renderStream(wait); }
+    hpInbox();
+  }
+  hpCalcPing(wait);
+}
+// ── Кожен готовий прорахунок → сповіщення в Telegram (сервер вирішує, кому) ──
+function hpCalcPing(m){
+  if(!m || !m.res || m.pinged) return; m.pinged = true;
+  const req = S.chat[S.chat.indexOf(m) - 1] || {}, items = m.res.items || [];
+  const sum = items.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
+  API('calc_ping', { calc:{ id:m.calcId || '', title:m.res.title || '', mode:S.mode || '', items:items.length, sum:Math.round(sum),
+    request:String(req.text || '').slice(0, 300), files:req.att || '', client:S.ctx.client?.name || S.ctx.client?.['ПІБ / назва'] || '', card:hpCard() } }).catch(() => {});
 }
 
 // ── Таблиця результату: заміна, кількість, додати/видалити, «запам’ятати для клієнта» ──
