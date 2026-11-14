@@ -551,6 +551,26 @@ body.hasTabs #sideBtn,body.hasTabs #cliBtn,body.hasTabs #repBtn,body.hasTabs #ca
 #ideaT{font:inherit;font-size:15px;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg)}
 .mcard .row .btn{flex:1;text-align:center;text-decoration:none}
 .tbox{touch-action:pan-x pan-y pinch-zoom}
+
+/* ── Профіль, режим «як клієнт» ── */
+.vabar{flex:none;background:#2B2B2B;color:#fff;font-size:13px;padding:7px 14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:50}
+.vabar[hidden]{display:none}
+.vabar button{background:#fff;color:#2B2B2B;border:0}
+.phead{display:flex;gap:14px;align-items:center;margin:8px 0 12px}
+.pava{position:relative;width:96px;height:96px;flex:none;border-radius:50%;overflow:hidden;cursor:pointer;display:block}
+.pava img,.pava svg{width:96px;height:96px;object-fit:cover;display:block}
+.pava span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;text-align:center;padding:3px 0;opacity:0;transition:opacity .2s}
+.pava:hover span{opacity:1}
+@media (hover:none){.pava span{opacity:1}}
+.pname{font-size:19px;display:block;line-height:1.2}
+.pstats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.pstats div{background:var(--surface);border:1px solid var(--line);padding:10px 6px;text-align:center;display:flex;flex-direction:column}
+.pstats b{font-size:17px;color:var(--brand-ink)}
+.pstats span{font-size:11px;color:var(--muted)}
+.pbars{display:flex;gap:8px;align-items:flex-end;justify-content:center;height:90px;padding:6px 0;border-bottom:1px solid var(--line)}
+.pbars div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted)}
+.pbars i{display:block;width:26px;background:var(--brand);border-radius:3px 3px 0 0}
+@media (max-width:420px){.pstats{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -573,6 +593,7 @@ body.hasTabs #sideBtn,body.hasTabs #cliBtn,body.hasTabs #repBtn,body.hasTabs #ca
     <button class="obtn startTop" id="startBtn">Почати роботу</button>
   </div></div>
 </header>
+<div id="vaBar" class="vabar" hidden></div>
 
 <aside id="side" class="side" hidden><div class="sideIn">
   <div class="row between"><b>Мої чати</b><button class="ghost" id="sideClose" aria-label="Закрити">✕</button></div>
@@ -664,7 +685,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-14.2';
+const APP_VER = '2026-11-14.4';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -1307,6 +1328,163 @@ async function exStructure(lines, said, wait){
   for(const x of lost) items.push({ i:x.i, need:x.t, search:x.t, alt:'', qty:1, unit:'шт', category:'rough_plumbing', note:'рядок не розібрано — перевірте' });
   return items.sort((a,b) => +a.i - +b.i).map(x => ({...x, src: lines[+x.i]}));
 }
+// ══ ПРОЄКТ ЗА ДИЗАЙНОМ — по-новому: ШІ лише розпізнає кімнати й точки, розрахунок робить код за правилами майстра ══
+// MiniMax погано рахує інженерію з 20 сторінок за раз, тож:
+// 1) кожну сторінку (і текст PDF) — окремим коротким запитом: кімнати, площі, прилади, вид чистової;
+// 2) об’єднуємо; 3) рахуємо матеріали КОДОМ (норми з «Правил майстра»: ТП 6,7 м/м², контури ≤ 80–90 м, набори на точку, калібрування «Лутчин»);
+// 4) коди Ekoplastik / Ostendorf / RAFTEC — фіксовані, решта — звичайним підбором; 5) менеджер бачить «Що розпізнав» і може дописати поправку текстом.
+const RT = { kitchen:'кухня', bath:'ванна', wc:'санвузол', bedroom:'спальня', kids:'дитяча', living:'вітальня', hall:'коридор', wardrobe:'гардероб', loggia:'лоджія', office:'кабінет', other:'інше' };
+const FX = { sink:'умивальник', kitchen_sink:'мийка кухонна', toilet:'унітаз (інсталяція)', shower:'душ / душова система', bath:'ванна', washer:'пральна машина', dishwasher:'посудомийка', towel:'рушникосушка', hygienic:'гігієнічний душ', boiler:'бойлер', ac:'кондиціонер', bidet:'біде' };
+const NO_TP = /bedroom|kids|wardrobe/;
+const pad11 = c => String(c).padStart(11, '0');
+const PROJ_PAGE = `Ти інженер «Гарячої Точки». Це сторінка дизайн-проєкту квартири/будинку (план, розгортка, візуалізація або специфікація).
+Витягни ЛИШЕ факти, нічого не вигадуй. Поверни ТІЛЬКИ JSON:
+{"kind":"plan|visual|electric|spec|other","total_area":0,
+"rooms":[{"name":"як підписано","type":"kitchen|bath|wc|bedroom|kids|living|hall|wardrobe|loggia|office|other","area":0}],
+"fixtures":[{"type":"sink|kitchen_sink|toilet|shower|bath|washer|dishwasher|towel|hygienic|boiler|ac|bidet","room":"назва кімнати","hidden":false,"mount":"накладний|врізний|меблевий|підвісний|підлоговий|настінний|прихований","color":"","shape":"","width":0}],
+"heat":"gas|boiler|central|","notes":"що важливо для інженерії (котел, бойлер, стояки, вхід води), коротко"}
+Площі — числа в м² з плану. Прилади рахуй окремо (2 умивальники = 2 записи). hidden=true для прихованого змішувача / душової системи у стіні.`;
+async function projRecognize(file, said, wait){
+  const jobs = [], n = (file?.images || []).length; let done = 0;
+  const ask = async content => { try{ return json(textOf(await claude([{ role:'user', content }], { max_tokens:6000, reasoning:'low' }))); }catch{ return null; } };
+  if((file?.pdfText || file?.text || '').replace(/\s/g,'').length > 150)
+    jobs.push(() => ask(`${PROJ_PAGE}\n\nТЕКСТ ПРОЄКТУ (весь документ):\n${(file.pdfText || file.text).slice(0, 15000)}`));
+  (file?.images || []).slice(0, 20).forEach((img, k) => jobs.push(async () => {
+    const r = await ask([{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:img } }, { type:'text', text:`${PROJ_PAGE}\nСторінка ${k+1} з ${n}.` }]);
+    wait.phase = `Розпізнаю сторінки · ${++done} з ${n}`; return r; }));
+  if(said) jobs.push(() => ask(`${PROJ_PAGE}\n\nОПИС ВІД МЕНЕДЖЕРА/КЛІЄНТА (має пріоритет):\n${said.slice(0, 4000)}`));
+  const pages = (await pool(jobs, 4)).filter(Boolean);
+  // об’єднання: кімнати за назвою (більша площа), прилади — максимум по кімнаті
+  const rooms = new Map(), fx = new Map(); let heat = '', total = 0; const notes = [];
+  const key = s => String(s || '').toLowerCase().replace(/[^a-zа-яіїєґ0-9]/g, '').slice(0, 14) || 'x';
+  for(const p of pages){
+    total = Math.max(total, +p.total_area || 0); if(p.heat) heat = heat || p.heat; if(p.notes) notes.push(p.notes);
+    for(const r of p.rooms || []){ const k = key(r.name); const o = rooms.get(k) || { name:r.name, type:r.type || 'other', area:0 }; o.area = Math.max(o.area, +r.area || 0); if(o.type === 'other' && r.type) o.type = r.type; rooms.set(k, o); }
+    const cnt = new Map();
+    for(const f of p.fixtures || []){ if(!FX[f.type]) continue; const k = f.type + '|' + key(f.room); cnt.set(k, [...(cnt.get(k) || []), f]); }
+    for(const [k, arr] of cnt){ const old = fx.get(k) || []; fx.set(k, arr.length > old.length ? arr.map((f, i) => ({ ...(old[i] || {}), ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== '' && v !== 0)) })) : old.map((f, i) => ({ ...(arr[i] || {}), ...f }))); }
+  }
+  const R = [...rooms.values()].filter(r => r.area > 0 || r.type !== 'other');
+  if(!total) total = R.reduce((s, r) => s + (r.area || 0), 0);
+  return { rooms:R, fixtures:[...fx.values()].flat(), heat, total:Math.round(total * 10) / 10, notes:notes.slice(0, 4).join(' | '), pages:pages.length };
+}
+
+// Розрахунок матеріалів кодом. Повертає позиції у форматі, який далі йде у звичайний підбір (fixed = код без ШІ).
+function projCalc(P, said){
+  const out = [], add = (need, qty, unit, category = 'rough_plumbing', fixed = '', note = '') => { if(qty > 0) out.push({ need, search:need, alt:'', qty:Math.ceil(qty * 100) / 100, unit, category, fixed: fixed ? pad11(fixed) : '', note }); };
+  const ceil = Math.ceil, F = t => P.fixtures.filter(f => f.type === t), N = t => F(t).length;
+  const sinks = N('sink') + N('kitchen_sink'), hidden = P.fixtures.filter(f => ['shower','hygienic','bath'].includes(f.type) && (f.hidden || f.type === 'hygienic')).length + P.fixtures.filter(f => f.type === 'bath' && !f.hidden).length;
+  const wm = N('washer') + N('dishwasher'), wcs = N('toilet') + N('bidet');
+  const hot = sinks + hidden, outlets = sinks * 2 + hidden * 2 + wm + wcs;
+  const area = P.total || P.rooms.reduce((s, r) => s + r.area, 0) || 60;
+  const heat = /boiler/.test(P.heat) || /бойлер/i.test(said) ? 'boiler' : /central|центральн/i.test(P.heat + said) ? 'central' : 'gas';
+  // ── Вода PPR Ekoplastik (ХВ PN20, ГВ Fiber Basalt), калібрування «Лутчин» ──
+  if(outlets){
+    const t20 = outlets * 4, t25 = Math.max(20, area * 1.2), hv = hot / Math.max(1, outlets);
+    const st = m => ceil(m / 4) * 4;
+    add('Труба PPR PN20 ф20х3,4 Ekoplastik (ХВ)', st(t20 * (1 - hv)), 'м', 'rough_plumbing', 43026);
+    add('Труба PPR Fiber Basalt ф20 Ekoplastik (ГВ)', st(t20 * hv), 'м', 'rough_plumbing', 21920);
+    add('Труба PPR PN20 ф25 Ekoplastik (ХВ)', st(t25 * 0.55), 'м', 'rough_plumbing', 966);
+    add('Труба PPR Fiber Basalt ф25 Ekoplastik (ГВ)', st(t25 * 0.45), 'м', 'rough_plumbing', 43030);
+    add('Коліно PPR 90° ф20 Ekoplastik', outlets * 5, 'шт', 'rough_plumbing', 42938);
+    add('Коліно PPR 45° ф20 Ekoplastik', outlets * 2, 'шт', 'rough_plumbing', 555);
+    add('Коліно PPR 90° ф25 Ekoplastik', ceil(t25 / 3), 'шт', 'rough_plumbing', 564);
+    add('Трійник PPR редукційний 25х20х25 Ekoplastik', ceil(outlets * 1.25), 'шт', 'rough_plumbing', 43179);
+    add('Трійник PPR ф25 Ekoplastik', 4, 'шт', 'rough_plumbing', 928);
+    add('Муфта PPR ф20 Ekoplastik', ceil(t20 / 4), 'шт', 'rough_plumbing', 650);
+    add('Муфта PPR ф25 Ekoplastik', ceil(t25 / 4), 'шт', 'rough_plumbing', 651);
+    add('Муфта перехідна ЗВ 25х20 Ekoplastik', 4, 'шт', 'rough_plumbing', 7750);
+    add('Коліно настінне РВ 20х1/2 Ekoplastik', sinks * 2 + wm, 'шт', 'rough_plumbing', 43083);
+    add('Планка для змішувача 20х1/2 Ekoplastik', hidden, 'шт', 'rough_plumbing', 43204);
+    add('Муфта PPR МРЗ 20х1/2 Ekoplastik', wcs + 2, 'шт', 'rough_plumbing', 42974);
+    add('Муфта PPR МРЗ 25х1/2 Ekoplastik', 2, 'шт', 'rough_plumbing', 42976);
+    add('Заглушка різьбова довга PPR РЗ 1/2 Ekoplastik (опресовка)', outlets, 'шт', 'rough_plumbing', 43224);
+    add('Опора PPR ф20 Ekoplastik', ceil(t20 * 0.8), 'шт', 'rough_plumbing', 775);
+    add('Опора PPR ф25 Ekoplastik', ceil(t25 * 0.8), 'шт', 'rough_plumbing', 42960);
+    add('Утеплювач PLM ф22 синій', st(t20 * (1 - hv)), 'м', 'rough_plumbing', 69934);
+    add('Утеплювач PLM ф22 червоний', st(t20 * hv), 'м', 'rough_plumbing', 69931);
+    add('Утеплювач PLM ф28 синій', st(t25 * 0.55), 'м', 'rough_plumbing', 69935);
+    add('Утеплювач PLM ф28 червоний', st(t25 * 0.45), 'м', 'rough_plumbing', 69932);
+  }
+  // ── Водопідготовка на вводі (завжди повна) ──
+  ['Кран кульовий 3/4 ВВ RAFTEC GOLD (ввід)', 'Фільтр грубої очистки 3/4 RAFTEC', 'Лічильник води 1/2 холодної', 'Клапан зворотний 3/4 латунь', 'Редуктор тиску 3/4 з манометром RAFTEC', 'Колба Ecosoft 10" 3/4 не прозора', 'Картридж механічний 10" 20 мкм Ecosoft', 'Кран кульовий 3/4 з американкою RAFTEC']
+    .forEach(n => add(n, 1, 'шт'));
+  add('Картридж механічний 10" 20 мкм Ecosoft (запасний)', 1, 'шт');
+  // ── Джерело тепла ──
+  if(heat === 'gas'){ add('Котел газовий двоконтурний конденсаційний 24 кВт', 1, 'шт'); add('Кран кульовий 3/4 для опалення з американкою', 2, 'шт'); add('Кран кульовий кутовий 1/2 з накидною', 2, 'шт'); add('Фільтр магнітний для котла 3/4', 1, 'шт'); add('Нейтралізатор конденсату Atlas NEUTRAL MINI', 1, 'шт'); }
+  if(heat === 'boiler' || N('boiler')){ add('Бойлер електричний 100 л Tatra', 1, 'шт'); add('Група безпеки для бойлера 1/2', 1, 'шт'); add('Кран кульовий 1/2 ВЗ RAFTEC', 2, 'шт'); add('Шланг для води 1/2 ВВ 50 см', 2, 'шт'); }
+  // ── Тепла підлога (не в спальнях/дитячих/гардеробах), крок 150 мм ──
+  const tpRooms = P.rooms.filter(r => r.area > 0 && !NO_TP.test(r.type));
+  const loops = []; for(const r of tpRooms){ const pipe = r.area * 0.85 * 6.7 + 2 * 6 + 1; const k = Math.max(1, ceil(pipe / 85)); for(let i = 0; i < k; i++) loops.push({ room:r.name, m:pipe / k }); }
+  loops.sort((a, b) => a.m - b.m); // малі поруч об’єднуємо, якщо разом ≤ 90 м
+  for(let i = 0; i < loops.length - 1; i++) if(loops[i].m + loops[i+1].m <= 90){ loops[i+1] = { room:loops[i].room + ' + ' + loops[i+1].room, m:loops[i].m + loops[i+1].m }; loops.splice(i, 1); i--; }
+  const tpPipe = loops.reduce((s, l) => s + l.m, 0), Nc = loops.length, tpArea = tpRooms.reduce((s, r) => s + r.area, 0);
+  const beds = P.rooms.filter(r => NO_TP.test(r.type) && r.type !== 'wardrobe');
+  if(Nc){
+    add('Труба PEX-A 16x2,0 RED EVOH RAFTEC (тепла підлога)', ceil(tpPipe / 10) * 10, 'м', 'rough_plumbing', 57229, 'бухтами; контури без з’єднань у стяжці');
+    add(`Колектор RAFTEC STEEL нерж. з витратомірами на ${Math.min(12, Math.max(2, Nc))} контури`, 1, 'шт', 'rough_plumbing', '', loops.map((l, i) => `К${i+1} ${l.room} ≈${Math.round(l.m)} м`).join('; '));
+    add('Кінцевий елемент 1" KKR03 RAFTEC', 2, 'шт'); add('Кран кульовий 1" з накидною ВВ для колектора RAFTEC (пара)', 1, 'шт');
+    add('Євроконус 3/4"х16х2,0 RAFTEC', Nc * 2, 'шт', 'rough_plumbing', 60395);
+    if(tpPipe > 200 || beds.length){ add('Змішувальний вузол SUR03 RAFTEC', 1, 'шт'); add('Насос циркуляційний Termojet APE 25/40/130', 1, 'шт'); }
+    add('Колекторна шафа врізна (ширину перерахує код)', 1, 'шт');
+    const per = tpRooms.reduce((s, r) => s + 4 * Math.sqrt(r.area), 0) * 1.05;
+    add('Демпферна стрічка 7 мм EXTRA рулон 50 м', ceil(per / 50), 'шт');
+    add('Плівка з розміткою 105 мкм RAFTEC рулон 50 м', ceil(tpArea * 1.1 / 50), 'шт');
+    add('Стрічка армована 48 мм х 50 м', Math.max(2, ceil(tpArea / 25)), 'шт', 'rough_plumbing', 85533);
+    add('Скоба гарпун 42 мм під такер (уп. 700)', ceil(tpPipe * 3 / 700), 'уп');
+    add('Гофра D20 червона', ceil(Nc + 2), 'м');
+    add('Фіксатор повороту 90° ф16', Nc * 2 + beds.length * 2, 'шт');
+    add('Пластифікатор у стяжку BETOKAN 10 л', ceil(tpArea / 70), 'шт');
+  }
+  // ── Радіатори там, де сплять (IDMAR 22 VK, ~70 Вт/м²) ──
+  for(const r of beds){ const L = Math.min(2000, Math.max(400, Math.round((r.area || 12) * 70 / 100) * 100));
+    add(`Радіатор сталевий тип 22 500x${L} VK нижнє підключення IDMAR (${r.name})`, 1, 'шт');
+    add('Термокомплект нижнього підключення з термоголовкою (вставка вентильна + вузол)', 1, 'шт'); add('Євроконус 3/4"х16х2,2 RAFTEC', 2, 'шт');
+    add('Кріплення радіатора стінове', 1, 'компл'); }
+  if(beds.length){ add('Труба PEX-A 16x2,2 RAFTEC (радіатори)', beds.length * 24, 'м'); add('Утеплювач PLM ф18 червоний', beds.length * 24, 'м'); }
+  // ── Каналізація OSTENDORF HT Safe ──
+  const o50 = sinks + wm + P.fixtures.filter(f => ['shower','bath','bidet'].includes(f.type)).length, l50 = o50 * 3 * 1.2;
+  if(o50){ add('Труба канал. ф50 2 м OSTENDORF HT Safe', ceil(l50 / 2), 'шт', 'rough_plumbing', 14853); add('Коліно канал. ф50 87,5° OSTENDORF', o50, 'шт', 'rough_plumbing', 14887);
+    add('Коліно канал. ф50 45° OSTENDORF', o50 * 2 + 2, 'шт', 'rough_plumbing', 14886); add('Трійник канал. 50х50х45° OSTENDORF', Math.max(0, o50 - 2), 'шт', 'rough_plumbing', 61171);
+    add('Заглушка канал. ф50 OSTENDORF', o50, 'шт', 'rough_plumbing', 14839); add('Хомут для каналізації 47–53 мм KVADO', ceil(l50 / 1.1), 'шт', 'rough_plumbing', 12413); }
+  if(wcs || o50){ add('Трійник канал. 110х50х87,5° OSTENDORF', 2, 'шт', 'rough_plumbing', 14935); add('Ревізія канал. ф110 OSTENDORF', 1, 'шт', 'rough_plumbing', 14978); add('Патрубок компенсаційний ф110 OSTENDORF', 1, 'шт', 'rough_plumbing', 14842); add('Труба канал. ф110 2 м OSTENDORF', ceil((wcs * 2 + 3) / 2), 'шт', 'rough_plumbing', 17998); add('Мастило OSTENDORF 250 г', 1, 'шт', 'rough_plumbing', 40884); add('Хомут для каналізації 110 ASG', 3 + wcs, 'шт', 'rough_plumbing', 110904); }
+  if(wcs){ add('Коліно канал. ф110 45° OSTENDORF', wcs * 2, 'шт', 'rough_plumbing', 18002); add('Трійник канал. 110х110х87,5° OSTENDORF', wcs, 'шт', 'rough_plumbing', 15859); add('Інсталяція Geberit Duofix з кріпленням', N('toilet'), 'шт'); }
+  if(wm) add('Сифон вбудований для пральної машини HL406', N('washer'), 'шт');
+  if(N('ac')){ add('Сифон для кондиціонера HL136N', N('ac'), 'шт', 'rough_plumbing', 91699); add('Труба канал. ф32 1 м OSTENDORF', N('ac') * 4, 'шт', 'rough_plumbing', 18772); }
+  // ── Кріплення ──
+  add('Дюбель швидкого монтажу 6х40 (уп. 100)', Math.max(1, ceil(outlets / 8)), 'уп'); add('Дюбель 8х80 потай', 4 * (beds.length + 3), 'шт');
+  // ── Електрика (мінімум, менеджер уточнює) ──
+  const nr = Math.max(4, P.rooms.length);
+  add('Щит вбудований 36 модулів', 1, 'шт', 'rough_electrical'); add('Реле напруги 63А', 1, 'шт', 'rough_electrical');
+  add('Диф-автомат C16 30mA', nr + 2, 'шт', 'rough_electrical'); add('Кабель ВВГнг-П 3х1,5', ceil(area * 1.5 / 10) * 10, 'м', 'rough_electrical'); add('Кабель ВВГнг-П 3х2,5', ceil(area * 2 / 10) * 10, 'м', 'rough_electrical');
+  add('Клема WAGO 221-413 (уп. 50)', ceil(nr / 3), 'уп', 'rough_electrical');
+  // ── Чистова з візуалізацій: атрибути приладу йдуть у потребу → підбір з матриці ──
+  const attr = f => [f.mount, f.color, f.shape, f.width ? 'ш ' + f.width : ''].filter(Boolean).join(', ');
+  for(const f of F('sink')){ add(`Умивальник ${attr(f) || 'білий'}`, 1, 'шт', 'finish_plumbing'); add(`Змішувач для умивальника ${f.color ? f.color : 'хром'}${/накладн/.test(f.mount||'') ? ', високий' : ''}`, 1, 'шт', 'finish_plumbing'); add('Сифон для умивальника', 1, 'шт', 'finish_plumbing'); add('Кран кутовий 1/2 для змішувача', 2, 'шт', 'finish_plumbing'); add('Дзеркало для ванної', 1, 'шт', 'finish_plumbing'); }
+  for(const f of F('kitchen_sink')){ add(`Мийка кухонна ${attr(f)}`, 1, 'шт', 'finish_plumbing'); add('Змішувач для кухні', 1, 'шт', 'finish_plumbing'); add('Кран кутовий 1/2 для змішувача', 2, 'шт', 'finish_plumbing'); }
+  for(const f of F('toilet')){ add(`Унітаз підвісний rimless ${attr(f)}`, 1, 'шт', 'finish_plumbing'); add('Кнопка змиву Geberit', 1, 'шт', 'finish_plumbing'); }
+  for(const f of F('shower')) add(f.hidden ? `Душова система прихованого монтажу ${f.color || ''}` : `Душова система ${f.color || ''}`, 1, 'шт', 'finish_plumbing');
+  for(const f of F('bath')) add(`Змішувач для ванни ${f.color || ''}${f.hidden ? ' прихованого монтажу' : ''}`, 1, 'шт', 'finish_plumbing');
+  for(const f of F('hygienic')) add(`Гігієнічний душ прихованого монтажу ${f.color || ''}`, 1, 'шт', 'finish_plumbing');
+  for(const f of F('towel')){ add(`Рушникосушка водяна ${attr(f)}`, 1, 'шт', 'finish_plumbing'); add('ТЕН для рушникосушки 0,6 кВт', 1, 'шт', 'finish_plumbing'); add('Крани для рушникосушки кутові (пара)', 1, 'шт', 'finish_plumbing'); }
+  return { items:out, heat, loops, beds:beds.length, outlets, area };
+}
+async function projectDraft(file, said, wait){
+  wait.phase = 'Розпізнаю проєкт';
+  const P = await projRecognize(file, said, wait);
+  if(!P.rooms.length && !P.fixtures.length) return { items:[], reply:'Не зміг розпізнати кімнат і приладів.', limits:'План нечитабельний або без підписів. Надішліть план з площами кімнат або напишіть: кімнати з площами, скільки санвузлів, умивальників, душів, котел чи бойлер.' };
+  const C = projCalc(P, said);
+  const heatT = { gas:'газовий двоконтурний котел', boiler:'бойлер', central:'центральне' }[C.heat];
+  const fxT = Object.entries(P.fixtures.reduce((a, f) => (a[f.type] = (a[f.type] || 0) + 1, a), {})).map(([k, v]) => `${FX[k]} ×${v}`).join(', ');
+  const reply = `**Що розпізнав** (${P.pages} стор.): площа ≈ ${C.area} м²; кімнати: ${P.rooms.map(r => `${r.name}${r.area ? ' ' + r.area + ' м²' : ''}`).join(', ') || '—'}.\n`
+    + `**Прилади:** ${fxT || '—'}.\n**Рішення за правилами майстра:** тепло — ${heatT}; вода PPR Ekoplastik (ХВ PN20, ГВ Fiber Basalt), ${C.outlets} виводів; `
+    + (C.loops.length ? `тепла підлога ${C.loops.length} контур(и), ≈${Math.round(C.loops.reduce((s, l) => s + l.m, 0))} м труби; ` : '')
+    + (C.beds ? `радіатори в ${C.beds} кімнатах, де сплять (без ТП); ` : '') + 'каналізація OSTENDORF HT Safe.\n'
+    + 'Щось не так — допишіть поправку текстом (напр. «кухня 14 м², бойлер замість котла, 2 умивальники в санвузлі») і я перерахую.';
+  const limits = [!P.rooms.some(r => r.area) ? 'не знайшов площ кімнат — тепла підлога і радіатори орієнтовні' : '', !P.fixtures.length ? 'не знайшов приладів на візуалізаціях' : '', 'траси і точну кількість фітингів рахую за нормами, без креслення трас'].filter(Boolean).join('; ');
+  return { items:C.items, reply, limits, title:'Проєкт ' + (C.area ? C.area + ' м²' : 'за дизайном'), checklist:[], lines:C.items.length };
+}
+
 async function extractList(file, said, wait){
   wait.phase = file ? 'Читаю файл' : 'Розбираю список';
   const lines = await exTranscribe(file, said, wait);
@@ -1331,7 +1509,7 @@ ${KB}
 "items":[{"need":"що потрібно: тип, розміри, різьба, система, бренд","search":"запит як у прайсі 1С: тип + розмір + бренд","alt":"другий запит іншими словами (синонім, рос. назва, без бренду)","qty":1,"unit":"шт","category":"rough_plumbing|finish_plumbing|rough_electrical","note":""}]}
 ЧИСТОВА за дизайном: для раковини, змішувача, унітаза, тумби, дзеркала, мийки, душу впиши в need з візуалізації/опису колір і покриття (білий глянець, чорний матовий, хром, брашоване золото…), форму, монтаж (підвісний, накладний, на стільницю) і ширину в мм, напр. «умивальник накладний на стільницю, білий, прямокутний, ш 600».
 Розміри пиши як у прайсі: 20х2.8, 20х16х20, 1/2", DN15. ${S.mode==='calc'?'checklist лиши порожнім.':''}`;
-    const draft = S.mode === 'calc' ? await extractList(file, said, wait) : json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
+    const draft = S.mode === 'project' ? await projectDraft(file, said, wait) : S.mode === 'calc' ? await extractList(file, said, wait) : json(textOf(await claude([{role:'user', content:[...fileBlocks(file), {type:'text', text:prompt}]}])));
     const needs = (draft.items||[]).slice(0,400); wait.n = needs.length;
     if(!needs.length){ wait.typing=null; wait.text = draft.reply || 'Не знайшов позицій. Напишіть список матеріалів або додайте фото.'; render(); save(); return; }
     const brands = (draft.brands||[]).filter(b => typeof b==='string' && b.trim()).slice(0,4);
@@ -1345,7 +1523,9 @@ ${KB}
     const mxC = n => { if(n.category !== 'finish_plumbing' && !mxKind(n.need)) return []; const k = mxKind(`${n.need} ${n.search}`); if(!k) return [];
       return mxFind({ type:k, query:`${n.need} ${n.search||''}`, in_price:true }, 8).map(m => m.it); };
     const r1 = needs.map((n,i) => ({ i, need:n.need, cands: [...new Set([...pinsFor(n.need||''), ...mxC(n), ...search([n.search, n.alt, n.need], 20, brands)])] }));
-    for(const p of await pickRound(r1, prefs, ctx, 'medium')) if(Number.isInteger(+p.i)) picks.set(+p.i, p);
+    const fixedOk = i => needs[i]?.fixed && byCode.get(needs[i].fixed);   // коди з правил майстра — без ШІ
+    for(const p of await pickRound(r1.filter(x => !fixedOk(x.i)), prefs, ctx, 'medium')) if(Number.isInteger(+p.i)) picks.set(+p.i, p);
+    needs.forEach((n, i) => { if(fixedOk(i)) picks.set(i, { i, code:n.fixed, match:'exact', note:'' }); });
 
     // Перевірка розмірів кодом: «точний» з іншим розміром → аналог
     const check = (i, p) => { const it = fix(p.code); if(!it){ if(p.code) p.code = null; return p; }
@@ -1375,7 +1555,7 @@ ${KB}
       const list = needs.map((n,i) => { const p = picks.get(i) || {}, cur = fix(p.code);
         const alt = [...new Set([...(cur?[cur]:[]), ...pinsFor(n.need||''), ...search([p.query, n.search, n.alt, n.need].filter(Boolean), 12, brands)])];
         return { i, need:n.need, chosen: cur ? candLine(cur) : null, match:p.match||'none', note:p.note||'', alt };
-      }).filter(x => !/послуг/i.test(x.note));
+      }).filter(x => !/послуг/i.test(x.note) && !fixedOk(x.i));
       const parts = []; for(let k=0;k<list.length;k+=10) parts.push(list.slice(k,k+10));
       const fixes = (await pool(parts.map(part => async () => {
         try{ const r = json(textOf(await claude([{role:'user', content:`Ти старший менеджер «Гарячої Точки». Молодший менеджер підібрав коди. Перевір КОЖЕН рядок за базою і правилами; знайди помилки: не той розмір/колір/різьба/кут/тип/система, бренд не за вказівкою клієнта чи не за пріоритетом бази, зайве «аналог», хоча в альтернативах є точний.\n${prefs?`ВКАЗІВКИ КЛІЄНТА: ${prefs}\n`:''}\n${KB}\n\n${PICK_RULES}\n\nРЯДКИ (chosen — поточний вибір, alt — альтернативи з прайсу):\n${JSON.stringify(part.map(x=>({i:x.i, need:x.need, chosen:x.chosen, match:x.match, note:x.note, alt:x.alt.map(candLine)})))}\n\nПоверни ТІЛЬКИ JSON зі ЗМІНАМИ (правильні рядки не включай): {"fix":[{"i":0,"code":"код з alt або null","match":"exact|analog|none","note":"що виправив / чим відрізняється"}]}`}], {max_tokens:12000, reasoning:'high'})));
@@ -1635,7 +1815,7 @@ const API = async (action, data = {}) => {
   return w.data;
 };
 S.me = null; S.ctx = { client:null, object:null, rules:[] };
-const isClient = () => S.me?.role === 'клієнт';
+const isClient = () => !!S.viewAs || S.me?.role === 'клієнт';
 const isStaff = () => S.me && !isClient();
 const roleLbl = r => r === 'директор' ? 'Директор' : r === 'клієнт' ? 'Клієнт' : 'Менеджер';
 const dt = t => t ? new Date(t).toLocaleString('uk-UA', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
@@ -2197,7 +2377,7 @@ const NAV = [];
 function viewOpen(html){ const v = $('cliSheet'); v.classList.add('view'); return cliSheet(html); }
 function closeView(){ $('cliSheet').hidden = true; NAV.length = 0; tabsMark(); }
 function navBack(){ NAV.pop(); const p = NAV.pop(); if(p) p[0](...p[1]); else closeView(); }
-function tracked(fn){ const w = function(...a){ if(NAV[NAV.length - 1]?.[0] !== w || JSON.stringify(NAV[NAV.length - 1]?.[1]) !== JSON.stringify(a)) NAV.push([w, a]); return fn(...a); }; return w; }
+function tracked(fn){ const w = function(...a){ if(!tracked.depth && (NAV[NAV.length - 1]?.[0] !== w || JSON.stringify(NAV[NAV.length - 1]?.[1]) !== JSON.stringify(a))) NAV.push([w, a]); tracked.depth = (tracked.depth || 0) + 1; try{ return fn(...a); } finally { tracked.depth--; } }; return w; }
 openClients = tracked(openClients); openClient = tracked(openClient); openReport = tracked(openReport); clientForm = tracked(clientForm); objectForm = tracked(objectForm);
 const _cliSheet = cliSheet;
 cliSheet = function(html){ const el = _cliSheet(html); $('cliSheet').classList.add('view'); tabsMark(); return el; };
@@ -2368,6 +2548,98 @@ function layoutVars(){
   st.setProperty('--vb', tb && !tb.hidden && isMobile() ? tb.getBoundingClientRect().height + 'px' : '0px');
 }
 addEventListener('resize', layoutVars); setInterval(layoutVars, 1500); setTimeout(layoutVars, 300);
+
+// ══ Профіль клієнта, аватар, «подивитись як клієнт» ══
+// Згенерований аватар: ініціали + колір і «сантехнічний» знак з імені (без фото)
+function avatarSVG(name, size = 96){
+  let h = 0; for(const ch of String(name || '?')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const hues = [16, 28, 200, 160, 260, 340, 45, 190], hue = hues[h % hues.length];
+  const ini = String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+  const icons = ['<path d="M70 26a10 10 0 0 0-13 13L36 60l6 6 21-21a10 10 0 0 0 13-13l-6 6-6-2-2-6z" fill="#fff" opacity=".9"/>',
+    '<path d="M70 22c8 11 12 18 12 24a12 12 0 0 1-24 0c0-6 4-13 12-24z" fill="#fff" opacity=".9"/>',
+    '<path d="M24 30h22v8h12v-8h20v12H58v8H46v-8H24z" fill="#fff" opacity=".85"/>',
+    '<circle cx="70" cy="34" r="12" fill="none" stroke="#fff" stroke-width="4" opacity=".9"/><path d="M70 34l7-6" stroke="#fff" stroke-width="4" stroke-linecap="round"/>'];
+  return `<svg viewBox="0 0 96 96" width="${size}" height="${size}" role="img" aria-label="Аватар"><defs><linearGradient id="ag${h}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue} 80% 62%)"/><stop offset="1" stop-color="hsl(${(hue + 30) % 360} 70% 42%)"/></linearGradient></defs>
+    <rect width="96" height="96" rx="48" fill="url(#ag${h})"/><g transform="translate(6 4) scale(.62)">${icons[h % icons.length]}</g>
+    <text x="48" y="70" text-anchor="middle" font-family="Open Sans,Arial,sans-serif" font-size="30" font-weight="800" fill="#fff">${esc(ini)}</text></svg>`;
+}
+async function shrinkAvatar(file){ const img = await createImageBitmap(file), s = 160, k = Math.max(s / img.width, s / img.height), c = document.createElement('canvas'); c.width = s; c.height = s;
+  c.getContext('2d').drawImage(img, (s - img.width * k) / 2, (s - img.height * k) / 2, img.width * k, img.height * k); return c.toDataURL('image/jpeg', 0.82); }
+
+async function openProfile(cidArg){
+  S.tab = 'profile';
+  const box = viewOpen('<div class="small">Завантажую профіль…</div>');
+  const cid = cidArg || S.viewAs?.id || S.ctx.client?.id || S.me?.client?.id || '';
+  let r; try{ r = await API('profile', { client_id:cid }); }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  const c = r.client, st = r.stats, mg = r.manager || S.me?.manager;
+  const months = Object.entries(st.byMonth).sort().slice(-6), max = Math.max(1, ...months.map(([, v]) => v.sum));
+  const ava = r.avatar ? `<img src="${r.avatar}" alt="Фото">` : avatarSVG(c.name);
+  box.innerHTML = `<div class="vhead"><span></span><b>${cidArg || S.viewAs ? 'Профіль клієнта' : 'Мій профіль'}</b><button class="ghost" data-close>Закрити</button></div>
+    <div class="phead"><label class="pava" title="Змінити фото">${ava}<input type="file" accept="image/*" id="pAva" hidden><span>Змінити фото</span></label>
+      <div><b class="pname">${esc(c.name)}</b><div class="small">${esc(c.phone)}${c.email ? ' · ' + esc(c.email) : ''}</div>${c.type ? `<div class="small">${esc(c.type)}</div>` : ''}${r.avatar ? '<button class="ghost sm" id="pAvaDel">Прибрати фото</button>' : ''}</div></div>
+    <div class="pstats"><div><b>${st.calcs}</b><span>розрахунків</span></div><div><b>${st.confirmed}</b><span>підтверджено</span></div><div><b>${fmt(Math.round(st.sum))}</b><span>грн на суму</span></div><div><b>${st.first ? new Date(st.first).toLocaleDateString('uk-UA', {month:'short', year:'2-digit'}) : '—'}</b><span>з нами з</span></div></div>
+    ${months.length ? `<div class="pbars">${months.map(([m, v]) => `<div title="${m}: ${v.calcs} розрах., ${fmt(Math.round(v.sum))} грн"><i style="height:${Math.max(4, v.sum / max * 64)}px"></i><span>${m.slice(5)}.${m.slice(2,4)}</span></div>`).join('')}</div><div class="small" style="text-align:center">Сума розрахунків по місяцях (останні ${months.length})</div>` : ''}
+    <form class="cform" id="pForm">
+      <label>ПІБ<input name="name" value="${esc(c.name)}"></label>
+      <label>Дата народження<input name="birth" type="date" value="${esc(c.birth || '')}"></label>
+      <label>Хто Ви<select name="type">${['', 'Майстер-сантехнік', 'Бригада / монтажна компанія', 'Будівельна фірма / забудовник', 'Дизайнер / архітектор', 'Приватний клієнт (свій ремонт)'].map(x => `<option ${x === c.type ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label>Вподобання: виробники, системи, деталі (ШІ враховує в кожному підборі)<textarea name="prefs" rows="3" placeholder="напр.: пайка Ekoplastik; PUSH — RAFTEC; крани PLM; чистова — Venta, чорний матовий">${esc(c.prefs || '')}</textarea></label>
+      <label>Про мене (анкета)<textarea name="survey" rows="3">${esc(c.survey || '')}</textarea></label>
+      <div class="err" id="pErr" hidden></div><button class="btn">Зберегти</button><span class="small" id="pOk"></span>
+    </form>
+    ${mg ? `<div class="sgrp">Ваш менеджер</div><div class="ccard mcard"><b>${esc(mg.name)}</b><div class="row"><a class="btn" href="tel:${esc(mg.phone)}">Подзвонити</a><a class="btn" href="viber://chat?number=${encodeURIComponent(String(mg.phone).replace(/[^\d+]/g,''))}">Viber</a>${mg.url ? `<a class="btn" href="${mg.url}" target="_blank" rel="noopener">Візитівка ↗</a>` : ''}</div></div>` : ''}`;
+  const save = async (p, okText) => { try{ await API('profile_save', { client_id:c.id, profile:p }); $('pOk').textContent = okText || 'Збережено ✓'; if(S.viewAs) Object.assign(S.viewAs, p); }catch(e){ $('pErr').textContent = e.message; $('pErr').hidden = false; } };
+  $('pAva').onchange = async e => { const f = e.target.files[0]; if(!f) return; const d = await shrinkAvatar(f); box.querySelector('.pava').firstElementChild.outerHTML = `<img src="${d}" alt="Фото">`; await save({ avatar:d }, 'Фото збережено ✓'); };
+  const del = $('pAvaDel'); if(del) del.onclick = async () => { await save({ avatar:'' }); openProfile(); };
+  $('pForm').onsubmit = async e => { e.preventDefault(); const f = e.target; $('pErr').hidden = true; $('pOk').textContent = 'Зберігаю…';
+    await save({ name:f.name.value, birth:f.birth.value, type:f.type.value, prefs:f.prefs.value, survey:f.survey.value });
+    if(S.ctx.client && S.ctx.client.id === c.id) S.ctx.client.prefs = f.prefs.value; };
+}
+openProfile = tracked(openProfile);
+
+// ── Режим «як бачить клієнт»: директор і менеджер працюють у застосунку очима свого клієнта ──
+S.viewAs = null;
+function viewAsStart(client){
+  S.viewAs = { ...client }; S.ctx = { client:{ ...client }, object:null, rules:[] };
+  document.body.classList.add('roleClient', 'viewAs'); $('vaBar').hidden = false;
+  $('vaBar').innerHTML = `<span>👁 Ви бачите застосунок як клієнт: <b>${esc(client.name)}</b></span><button class="sm" id="vaExit">Повернутись у свій режим</button>`;
+  $('vaExit').onclick = viewAsStop;
+  closeView(); tabsRender(); ctxRender(); newChat(); render();
+}
+function viewAsStop(){
+  S.viewAs = null; S.ctx = { client:null, object:null, rules:[] };
+  document.body.classList.remove('viewAs'); document.body.classList.toggle('roleClient', S.me?.role === 'клієнт'); $('vaBar').hidden = true;
+  closeView(); tabsRender(); ctxRender(); newChat(); render();
+}
+// кнопка в картці клієнта
+const _openClient3 = openClient;
+openClient = async function(cid){
+  await _openClient3(cid);
+  if(!isStaff() || !cid) return;
+  const card = $('cliBody').querySelector('.ccard'); if(!card || card.querySelector('[data-va]')) return;
+  const row = card.querySelector('.row'); const b = document.createElement('button'); b.dataset.va = 1; b.textContent = '👁 Подивитись як клієнт';
+  b.onclick = async () => { try{ const r = await API('objects', { client_id:cid }); viewAsStart(r.client); }catch(e){ showErr(e.message); } };
+  const p = document.createElement('button'); p.textContent = 'Профіль і статистика'; p.onclick = () => openProfile(cid);
+  row.prepend(p); row.prepend(b);
+};
+openClient = tracked(openClient);
+
+// вкладки клієнта: «Профіль» замість «Менеджер» (менеджер — усередині профілю)
+TABS_CLIENT.splice(3, 1, ['profile', 'Профіль', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4 4-6 8-6s7 2 8 6']);
+const _tabGo = tabGo;
+tabGo = function(k){ if(k === 'profile'){ startWork(); S.tab = k; NAV.length = 0; openProfile(); tabsMark(); return; } _tabGo(k); };
+// «Ще»: директор/менеджер — «Подивитись як клієнт»
+const _moreMenu = moreMenu;
+moreMenu = function(){
+  _moreMenu();
+  const sh = $('moreSheet'), first = sh.querySelector('[data-m]');
+  if(isStaff()){ const b = document.createElement('button'); b.dataset.m = 'va'; b.textContent = '👁 Подивитись як клієнт'; first.before(b);
+    b.onclick = e => { e.stopPropagation(); sh.hidden = true; openClients(); showErr('Оберіть клієнта і натисніть «👁 Подивитись як клієнт».'); setTimeout(hideErr, 4000); }; }
+  if(S.viewAs){ const b = document.createElement('button'); b.textContent = 'Повернутись у свій режим'; first.before(b); b.onclick = e => { e.stopPropagation(); sh.hidden = true; viewAsStop(); }; }
+};
+// у режимі клієнта об’єкти/запити йдуть від імені обраного клієнта
+const _openClient4 = openClient;
+openClient = function(cid){ return _openClient4(cid || S.viewAs?.id || cid); };
 
 // ── Старт ──
 (function(){
