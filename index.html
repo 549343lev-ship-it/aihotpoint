@@ -575,6 +575,104 @@ body.hasTabs #sideBtn,body.hasTabs #cliBtn,body.hasTabs #repBtn,body.hasTabs #ca
 .pwarn{background:#FFF4E5;border-left:4px solid #E65100;padding:8px 10px;font-size:12.5px;color:#7A3B00;line-height:1.4}
 .pwd{font-family:var(--mono);background:var(--tint);padding:2px 8px;font-size:15px;user-select:all}
 .gbox p{margin:0}
+
+/* ══ Оболонка: шапка · бокове меню · «пігулка» (брендбук: Open Sans, #F2673A / #B8431C, плоско) ══ */
+body.shellOn header .hrow,body.shellOn header .obar{display:none!important}
+body.shellOn header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);box-shadow:none}
+.shell .in{display:flex;align-items:center;gap:10px;min-height:60px;padding-block:6px}
+.sh-ic{width:40px;height:40px;display:grid;place-items:center;padding:0!important;border:1px solid var(--line)!important;background:var(--surface)!important;color:var(--fg)!important;flex:none}
+.sh-ic svg{width:22px;height:22px}
+.sh-logo{display:flex;align-items:center;background:#fff;padding:3px 6px;border-radius:4px;text-decoration:none;flex:none}
+.sh-logo img{height:34px;width:auto;display:block}
+.sh-logo.nologo img{display:none}
+.sh-logo.nologo::after{content:'Гаряча Точка';font-weight:800;font-style:italic;font-size:17px;color:#F2673A}
+.sh-ai{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.sh-ai b{color:var(--brand)}
+.sh-ai .dot{width:7px;height:7px;border-radius:50%;background:var(--brand);animation:ping 1.8s infinite}
+.sh-nav{display:flex;align-items:center;gap:2px;margin:0 auto;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.sh-nav[hidden]{display:none}
+.sh-nav button{display:inline-flex;align-items:center;gap:7px;border:0!important;background:none!important;color:var(--muted)!important;font-weight:600;font-size:14px;padding:7px 14px;border-radius:999px!important;position:relative;white-space:nowrap}
+.sh-nav button svg{width:18px;height:18px}
+.sh-nav button:hover{color:var(--fg)!important;background:var(--alt)!important}
+.sh-nav button.on{color:var(--brand-ink)!important;background:var(--tint)!important}
+.sh-nav .tb{position:static;margin-left:2px}
+.sh-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex:none}
+.sh-nav:not([hidden])+.sh-right{margin-left:0}
+.sh-phone{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--fg)}
+.sh-phone svg{width:30px;height:30px;padding:6px;border:1.5px solid var(--brand);border-radius:50%;color:var(--brand);box-sizing:border-box}
+.sh-phone b{display:block;font-size:14.5px;line-height:18px}.sh-phone small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+body.shellOn:not(.introMode) .sh-phone{display:none}
+.sh-start{white-space:nowrap}
+.sh-start[hidden],.sh-me[hidden]{display:none!important}
+.sh-me{display:flex;align-items:center;gap:8px;padding:3px 8px 3px 3px!important;border:1px solid var(--line)!important;border-radius:999px!important;background:var(--surface)!important;color:var(--fg)!important;max-width:240px}
+.sh-me:hover{border-color:var(--brand)!important}
+.sh-me.va{border-color:var(--brand)!important;background:var(--tint)!important}
+.sh-ava{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;display:block}
+.sh-ava img,.sh-ava svg{width:34px;height:34px;object-fit:cover;display:block}
+.sh-who{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.15;text-align:left}
+.sh-who b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.sh-who small{font-size:11px;color:var(--muted);font-weight:600}
+.sh-me .car{width:16px;height:16px;color:var(--muted)}
+/* до входу: шапка без меню */
+body.shellOn.introMode .sh-nav,body.shellOn:not(.hasTabs) .sh-nav{display:none}
+@media (min-width:900px){#shBurger{display:none}}
+@media (max-width:899px){
+  .shell .in{min-height:54px;gap:8px}
+  .sh-nav,.sh-who,.sh-me .car{display:none!important}
+  .sh-me{padding:2px!important}
+  .sh-logo img{height:28px}
+  .sh-ai{font-size:12px;padding:3px 8px}
+  .sh-phone span{display:none}
+  .sh-start{padding:8px 12px;font-size:13px}
+}
+@media (max-width:420px){.sh-ai{display:none}}
+/* ── «пігулка» знизу на телефоні ── */
+@media (max-width:899px){
+  body.shellOn #tabbar{margin:4px 10px max(8px,env(safe-area-inset-bottom,0px));border:1px solid var(--line);border-radius:999px;padding:4px;background:var(--surface);box-shadow:0 6px 24px rgba(31,31,31,.12)!important}
+  body.shellOn #tabbar button{border-radius:999px!important;padding:6px 2px 5px;font-size:10.5px;gap:1px}
+  body.shellOn #tabbar svg{width:21px;height:21px}
+  body.shellOn #tabbar button.on{background:var(--tint)!important;color:var(--brand-ink)}
+  body.shellOn #tabbar button.on::before{display:none}
+  body.shellOn #cliSheet.view{bottom:var(--vb2,0px)!important}
+}
+body.shellOn #cliSheet.view{top:var(--vt2,0px)!important}
+/* ── бокове меню ── */
+#drawer{position:fixed;inset:0;z-index:60;background:rgba(20,20,20,0);transition:background .2s}
+#drawer[hidden]{display:none}
+#drawer.open{background:rgba(20,20,20,.45)}
+.dr-in{position:absolute;top:0;bottom:0;width:min(340px,88vw);background:var(--surface);display:flex;flex-direction:column;overflow:auto;transition:transform .22s ease-out;padding-bottom:env(safe-area-inset-bottom,0px)}
+#drawer.left .dr-in{left:0;transform:translateX(-100%);border-right:1px solid var(--line)}
+#drawer.right .dr-in{right:0;transform:translateX(100%);border-left:1px solid var(--line)}
+#drawer.open .dr-in{transform:none}
+.dr-head{position:relative;display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:center;padding:22px 18px 16px;padding-top:max(22px,env(safe-area-inset-top,0px));border-top:4px solid var(--brand);border-bottom:1px solid var(--line)}
+.dr-ava{width:56px;height:56px;border-radius:50%;overflow:hidden}.dr-ava img,.dr-ava svg{width:56px;height:56px;object-fit:cover;display:block}
+.dr-who{min-width:0;display:flex;flex-direction:column;gap:4px}
+.dr-who b{font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.dr-role{align-self:flex-start;font-size:11.5px;font-weight:700;color:var(--brand-ink);background:var(--tint);border-radius:999px;padding:2px 9px}
+.dr-role.va{background:var(--brand);color:#fff}
+.dr-link{grid-column:2;justify-self:start;border:0!important;background:none!important;color:var(--brand-ink)!important;font-weight:700;font-size:13px;padding:0!important}
+.dr-x{position:absolute;top:10px;right:10px;width:34px;height:34px;padding:0!important;border:0!important;background:none!important;color:var(--muted)!important;font-size:18px}
+.dr-va{display:flex;align-items:center;gap:10px;margin:12px 14px 0;padding:11px 12px!important;background:var(--brand-ink)!important;color:#fff!important;border:0!important;font-weight:700}
+.dr-va svg{width:18px;height:18px}
+.dr-body{padding:6px 10px;flex:1}
+.dr-grp{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:14px 10px 6px}
+.dr-body button,.dr-out{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0!important;background:none!important;color:var(--fg)!important;font-size:15px;font-weight:600;padding:10px!important;border-radius:4px!important}
+.dr-body button svg,.dr-out svg{width:20px;height:20px;color:var(--brand);flex:none}
+.dr-body button:hover,.dr-out:hover{background:var(--alt)!important}
+.dr-body button.on{background:var(--tint)!important;color:var(--brand-ink)!important}
+.dbadge{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;background:var(--brand);color:#fff;border-radius:999px;padding:1px 7px}
+.dr-foot{padding:10px 14px 16px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line)}
+.dr-card{display:flex;flex-direction:column;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-left:3px solid var(--brand);padding:9px 12px;border-radius:4px}
+.dr-card small{font-size:11px;color:var(--muted);font-weight:600}.dr-card b{font-size:15px}.dr-card span{font-size:12.5px;color:var(--muted)}
+.dr-out{color:var(--muted)!important}
+/* ── загальне шліфування (у межах брендбуку) ── */
+body.shellOn .vhead{padding:12px 0;border-bottom:1px solid var(--line)}
+body.shellOn .vhead b{font-size:17px;font-weight:800}
+body.shellOn .ccard,body.shellOn .citem{border:1px solid var(--line);border-radius:4px;transition:border-color .15s}
+body.shellOn .citem:hover{border-color:var(--brand)}
+body.shellOn .sgrp{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+body.shellOn .sbar input{border-radius:999px!important;padding-left:16px}
+body.shellOn .vabar{position:sticky;top:var(--vt2,0px);z-index:29}
 </style>
 </head>
 <body>
@@ -689,7 +787,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-14.5';
+const APP_VER = '2026-11-14.6';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -2746,6 +2844,200 @@ const _API0 = API;
 const _send2 = send;
 send = async function(){ await _send2(); const w = S.chat[S.chat.length - 1]; if(w?.role === 'ai' && !w.typing) hpBlink(w.res ? '✅ Підбір готовий' : '💬 Відповідь готова'); };
 $('send').onclick = send;
+
+// ══ Розуміння запиту: перед дорогим підбором ШІ коротко з’ясовує, чого хоче людина.
+//    Розуміє «тупі» запити без інструкцій (просто фото, «ось порахуй», сленг), сам обирає режим,
+//    а якщо без уточнення результат буде поганий — чесно каже, що саме незрозуміло, і просить деталі.
+const MODE_T = { calc:'розрахунок списку', project:'проєкт за планом', pick:'підбір товару', question:'питання' };
+function hpObviousList(text){ const ls_ = String(text || '').split(/\n/).filter(l => /\d/.test(l) && l.trim().length > 4); return ls_.length >= 3; }
+async function hpUnderstand(text, file, wait){
+  const prev = S.chat.filter(m => m.role === 'me' && m.text && m !== S.chat[S.chat.length - 2]).slice(-4).map(m => m.text).join('\n').slice(-1500);
+  if(!file && hpObviousList(text)) return { go:true, mode:'calc', clear:true };      // явний список — без зайвого кроку
+  wait.phase = 'Розумію запит';
+  const nImg = file?.images?.length || 0;
+  const prompt = `Ти — диспетчер запитів Hotpoint.ai, помічника магазину сантехніки «Гаряча Точка» (сантехніка, опалення, водопостачання, каналізація, електрика).
+Режим, який зараз обрано в застосунку: ${S.mode} (${MODE_T[S.mode] || ''}).
+Режими: calc — порахувати готовий перелік матеріалів (рукопис, фото списку, рахунок іншого постачальника, Excel, текст зі списком);
+project — розрахувати матеріали за планом квартири/будинку, дизайн-проєктом, кресленням, ескізом від руки з виводами, або описом об’єкта («квартира 60 м², 2 санвузли»);
+pick — підібрати конкретний товар чи чистову за описом/фото/візуалізацією («унітаз підвісний білий», «змішувач як на фото»);
+question — питання без розрахунку (як змонтувати, що краще, чи є в наявності, ціна одного товару).
+${prev ? `Попередні повідомлення клієнта в цьому чаті:\n${prev}\n` : ''}Нове повідомлення: «${String(text || '').slice(0, 2000)}»
+Файли: ${file ? `${file.name}; зображень: ${nImg}; PDF: ${file.pdf ? 'так' : 'ні'}${file.text ? `; текст файлу (початок): ${file.text.slice(0, 1200)}` : ''}` : 'немає'}.
+${nImg ? 'Перше зображення додано — подивись, що на ньому (список, план, візуалізація, фото товару, щось інше).' : ''}
+Завдання: зрозумій, чого людина хоче, навіть якщо написано коротко, з помилками, сленгом, суржиком чи взагалі без інструкцій («ось», «порахуй», «шо треба», «зроби», просто фото без тексту). Додумуй розумно, як досвідчений продавець:
+фото/скан списку чи рахунку → calc; план, креслення, ескіз з кімнатами чи виводами, візуалізація цілої ванної з проханням «порахувати» → project; один товар чи «підбери» → pick.
+clear=false ЛИШЕ якщо без уточнення результат буде поганим: нема ні файлу, ні переліку, ні опису об’єкта; або на фото не видно, що рахувати; або запит не про товари магазину. Короткий, але зрозумілий запит — це clear=true.
+Поверни ТІЛЬКИ JSON: {"mode":"calc|project|pick|question","confidence":0.0,"clear":true,"understood":"одним реченням українською: як ти зрозумів завдання","missing":["чого бракує для хорошого результату"],"ask":"якщо clear=false: 1-2 речення на «Ви» — що саме незрозуміло і чому","examples":["2-4 короткі приклади, що написати чи надіслати"],"answer":"якщо mode=question — коротка відповідь по суті, інакше порожньо"}`;
+  try{
+    const d = json(textOf(await claude([{ role:'user', content:[...(nImg ? [{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:file.images[0] } }] : []), { type:'text', text:prompt }] }], { max_tokens:1500, reasoning:'low' })));
+    return { ...d, go:true };
+  }catch(e){ console.warn('understand', e); return { go:true, clear:true }; }       // не вдалось — працюємо як раніше
+}
+function hpAskMore(u, wait){
+  const ex = (u.examples || []).filter(Boolean).slice(0, 4), miss = (u.missing || []).filter(Boolean).slice(0, 4);
+  wait.typing = null;
+  wait.text = `**Не до кінця зрозумів запит.** ${u.ask || 'Опишіть, будь ласка, детальніше, що потрібно.'}`
+    + (u.understood ? `\n\nПоки що зрозумів так: ${u.understood}` : '')
+    + (miss.length ? `\n\n**Для хорошого результату бракує:**\n${miss.map(x => '• ' + x).join('\n')}` : '')
+    + (ex.length ? `\n\n**Можна написати, наприклад:**\n${ex.map(x => '• «' + x + '»').join('\n')}` : '')
+    + '\n\nДопишіть відповідь сюди — файли, які Ви вже надіслали, я врахую.';
+  wait.clarify = true; render(); save();
+}
+const _calcU = calc, _pickU = pick;
+async function hpRoute(text, file, wait, via){
+  if(!file && S.keepFile){ file = S.keepFile; }                                       // відповідь на уточнення — з попередніми файлами
+  const u = await hpUnderstand(text, file, wait);
+  if(u.mode === 'question' && u.answer && !file){ wait.typing = null; wait.text = u.answer; render(); save(); S.keepFile = null; return; }
+  if(u.clear === false){ S.keepFile = file || S.keepFile; return hpAskMore(u, wait); }
+  S.keepFile = null;
+  if(['calc','project','pick'].includes(u.mode) && u.mode !== S.mode && (u.confidence ?? 0) >= 0.7){ setMode(u.mode); wait.mode = u.mode; }
+  wait.understood = u.understood || '';
+  const r = S.mode === 'pick' ? await _pickU(file, wait) : await _calcU(text, file, wait);
+  if(wait.understood && wait.text && !wait.clarify) wait.text = `**Зрозумів так:** ${wait.understood}\n\n` + wait.text;
+  render(); save(); return r;
+}
+calc = (text, file, wait) => hpRoute(text, file, wait, 'calc');
+pick = (file, wait) => hpRoute(S.chat.filter(m => m.role === 'me').slice(-1)[0]?.text || '', file, wait, 'pick');
+// ══ Оболонка застосунку: одна шапка (☰ · лого · меню · профіль), бокове меню, нижня «пігулка» на телефоні.
+//    Клієнт і працівник бачать різні меню: клієнт ніколи не бачить «Клієнти», «Звіт», витрати ШІ.
+// Кеш стартових даних прив’язаний до токена: інший акаунт у цьому ж браузері не побачить чужого меню.
+(() => { const g = ls.get, s = ls.set;
+  ls.get = k => { const v = g(k); if(k === 'hpboot' && v && v.tok !== apiKey()) return null; return v; };
+  ls.set = (k, v) => s(k, k === 'hpboot' && v ? { ...v, tok:apiKey() } : v); })();
+
+const SH_I = {
+  chat:'M4 6h16M4 12h10M4 18h7', clients:'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.5 3 5.2',
+  objects:'M3 21V9l9-6 9 6v12M9 21v-6h6v6', search:'M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM16 16l5 5', report:'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  profile:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1-4 4-6 8-6s7 2 8 6', manager:'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
+  menu:'M4 7h16M4 12h16M4 17h16', chats:'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z', news:'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z',
+  help:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14M12 17.5h.01', idea:'M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z',
+  eye:'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', out:'M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3',
+  ideas:'M4 4h16v12H8l-4 4z', back:'M15 18l-6-6 6-6', plus:'M12 5v14M5 12h14', phone:'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2'
+};
+const shIco = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SH_I[k] || SH_I.menu}"/></svg>`;
+const isDir = () => S.me?.role === 'директор' && !S.viewAs;
+
+// головні вкладки (шапка на комп’ютері, «пігулка» на телефоні)
+function shTabs(){
+  if(isClient()) return [['chat','Запит'], ['objects','Мої об’єкти'], ['search','Пошук'], ['manager','Менеджер']];
+  return [['chat','Підбір'], ['clients','Клієнти'], ['search','Пошук'], ...(isDir() ? [['report','Звіт']] : [])];
+}
+// повне меню (бокова панель)
+function shMenu(){
+  if(isClient()) return [
+    ['Робота', [['chat','Новий запит'], ['objects','Мої об’єкти'], ['search','Пошук товарів'], ['chats','Мої чати']]],
+    ['Я і «Гаряча Точка»', [['profile','Мій профіль'], ['manager','Мій менеджер'], ['news','Новинки і викладки']]],
+    ['Допомога', [['help','Що вміє ШІ і як краще'], ['idea','Повідомити про помилку / ідею']]]];
+  return [
+    ['Робота', [['chat','Новий підбір'], ['clients','Клієнти'], ['search','Пошук'], ['chats','Мої чати']]],
+    ['Керування', [...(isDir() ? [['report','Звіт'], ['ideas','Пропозиції й помилки ШІ']] : []), ['eye','Подивитись як клієнт']]],
+    ['Допомога', [['news','Новинки і викладки'], ['help','Що вміє ШІ і як краще'], ['idea','Повідомити про помилку / ідею']]]];
+}
+
+// ── розмітка шапки і бокового меню ──
+(() => {
+  const hdr = document.querySelector('header'), bar = document.createElement('div');
+  bar.className = 'shell gut';
+  bar.innerHTML = `<div class="in">
+    <button class="sh-ic" id="shBurger" aria-label="Відкрити меню">${shIco('menu')}</button>
+    <a class="sh-logo" href="https://hot-point.com.ua/" target="_blank" rel="noopener" aria-label="Гаряча Точка"><img src="https://hot-point.com.ua/image/hp_logo_ua.svg" alt="Гаряча Точка" onerror="this.parentNode.classList.add('nologo')"></a>
+    <span class="sh-ai"><span class="dot"></span>Hotpoint<b>.ai</b></span>
+    <nav class="sh-nav" id="shNav" aria-label="Розділи"></nav>
+    <div class="sh-right">
+      <a class="sh-phone" href="tel:0800305777">${shIco('phone')}<span><b>0-800-305-777</b><small>безкоштовно</small></span></a>
+      <button class="btn sh-start" id="shStart">Почати роботу</button>
+      <button class="sh-me" id="shMe" hidden aria-label="Профіль і меню"></button>
+    </div></div>`;
+  hdr.prepend(bar);
+  const dr = document.createElement('aside'); dr.id = 'drawer'; dr.hidden = true; dr.innerHTML = '<div class="dr-in" role="dialog" aria-label="Меню"></div>';
+  document.body.appendChild(dr);
+  document.body.classList.add('shellOn');
+  $('shBurger').onclick = () => drawerOpen('left');
+  $('shMe').onclick = () => drawerOpen(isMobile() ? 'left' : 'right');
+  $('shStart').onclick = () => { if(!S.me) return mmGate('register'); startWork(); $('txt').focus(); shellRender(); };
+  dr.addEventListener('click', e => { if(e.target === dr) drawerClose(); });
+  // свайп вліво — закрити меню
+  let x0 = null; dr.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive:true });
+  dr.addEventListener('touchend', e => { if(x0 !== null && x0 - e.changedTouches[0].clientX > 70 && dr.classList.contains('left')) drawerClose(); x0 = null; }, { passive:true });
+  addEventListener('keydown', e => { if(e.key === 'Escape' && !dr.hidden) drawerClose(); });
+})();
+
+function shWho(){
+  const c = S.viewAs || (isClient() ? (S.me?.client || S.me) : S.me);
+  return { name:c?.name || S.me?.name || '', role:S.viewAs ? 'Перегляд як клієнт' : roleLbl(S.me?.role), ava:(!S.viewAs && S.myAva) || '' };
+}
+function shellRender(){
+  const on = !!S.me, intro = document.body.classList.contains('introMode');
+  $('shStart').hidden = on && !intro; $('shMe').hidden = !on; $('shNav').hidden = !on;
+  if(!on) return;
+  const w = shWho();
+  $('shMe').innerHTML = `<span class="sh-ava">${w.ava ? `<img src="${w.ava}" alt="">` : avatarSVG(w.name, 34)}</span><span class="sh-who"><b>${esc(w.name.split(' ').slice(0, 2).join(' '))}</b><small>${esc(w.role)}</small></span><svg class="car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>`;
+  $('shMe').classList.toggle('va', !!S.viewAs);
+}
+
+// ── вкладки ──
+tabsRender = function(){
+  if(!S.me) return;
+  const t = shTabs(), btn = ([k, l]) => `<button data-tab="${k}">${shIco(k)}<span>${l}</span>${k === 'clients' ? '<i class="tb" id="tbBadge" hidden></i>' : ''}</button>`;
+  $('shNav').innerHTML = t.map(btn).join('');
+  const mob = [...t.slice(0, 3), isClient() ? ['profile','Профіль'] : isDir() ? ['report','Звіт'] : ['profileStaff','Я'], ['menu','Меню']].filter(x => x[0] !== 'profileStaff');
+  $('tabbar').innerHTML = mob.map(btn).join('');
+  $('topTabs').innerHTML = ''; $('tabbar').hidden = false; document.body.classList.add('hasTabs');
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => tabGo(b.dataset.tab));
+  document.body.classList.toggle('roleClient', isClient());
+  tabsMark(); badges(); shellRender();
+};
+const _tabGoSh = tabGo;
+tabGo = function(k){
+  drawerClose();
+  if(k === 'menu' || k === 'more') return drawerOpen('left');
+  if(isClient() && (k === 'clients' || k === 'report')) k = 'objects';      // клієнту — лише своє
+  if(k === 'report' && !isDir()) return;
+  _tabGoSh(k);
+};
+moreMenu = function(){ drawerOpen('left'); };
+
+// ── бокове меню ──
+function drawerOpen(side){
+  const dr = $('drawer'), box = dr.firstElementChild, w = shWho(), mg = S.me?.manager;
+  dr.className = side === 'right' ? 'right' : 'left';
+  const item = ([k, l]) => `<button data-dm="${k}" class="${S.tab === k && !$('cliSheet').hidden ? 'on' : ''}">${shIco(k)}<span>${l}</span>${k === 'clients' && S.inbox?.length ? `<i class="dbadge">${S.inbox.length}</i>` : ''}</button>`;
+  box.innerHTML = `<div class="dr-head">
+      <button class="dr-x" data-dm="x" aria-label="Закрити">✕</button>
+      <div class="dr-ava">${w.ava ? `<img src="${w.ava}" alt="">` : avatarSVG(w.name, 56)}</div>
+      <div class="dr-who"><b>${esc(w.name)}</b><span class="dr-role ${S.viewAs ? 'va' : ''}">${esc(w.role)}</span></div>
+      ${isClient() ? `<button class="dr-link" data-dm="profile">Мій профіль →</button>` : ''}
+    </div>
+    ${S.viewAs ? `<button class="dr-va" data-dm="vaexit">${shIco('back')}<span>Повернутись у свій режим</span></button>` : ''}
+    <div class="dr-body">${shMenu().map(([h, list]) => `<div class="dr-grp">${esc(h)}</div>${list.map(item).join('')}`).join('')}</div>
+    <div class="dr-foot">
+      ${isClient() && mg ? `<a class="dr-card" href="tel:${esc(mg.phone)}"><small>Ваш менеджер</small><b>${esc(mg.name)}</b><span>${esc(mg.phone)}</span></a>` : ''}
+      <a class="dr-card" href="tel:0800305777"><small>Гаряча лінія · безкоштовно</small><b>0-800-305-777</b><span>hot-point.com.ua</span></a>
+      ${S.viewAs ? '' : `<button data-dm="out" class="dr-out">${shIco('out')}<span>Вийти</span></button>`}
+    </div>`;
+  dr.hidden = false; requestAnimationFrame(() => dr.classList.add('open'));
+  box.onclick = e => { const b = e.target.closest('[data-dm]'); if(!b) return; const k = b.dataset.dm; drawerClose(); if(k === 'x') return;
+    startWork(); NAV.length = 0;
+    if(['chat','clients','objects','search','report','manager','profile'].includes(k)) return tabGo(k);
+    S.tab = 'more';
+    if(k === 'chats'){ closeView(); openSide(); } else if(k === 'news') openNews(); else if(k === 'help') openHelp(); else if(k === 'idea') ideaForm('меню');
+    else if(k === 'ideas') openIdeas(); else if(k === 'eye'){ openClients(); showErr('Оберіть клієнта і натисніть «👁 Подивитись як клієнт».'); setTimeout(hideErr, 4000); }
+    else if(k === 'vaexit') viewAsStop();
+    else if(k === 'out'){ try{ localStorage.removeItem('hpuser'); localStorage.removeItem('hpboot'); }catch{} location.reload(); }
+    tabsMark(); };
+}
+function drawerClose(){ const dr = $('drawer'); if(!dr || dr.hidden) return; dr.classList.remove('open'); setTimeout(() => { if(!dr.classList.contains('open')) dr.hidden = true; }, 200); }
+
+// ── оновлення шапки при зміні користувача/режиму ──
+const _hpMeSh = hpMe; hpMe = async function(){ await _hpMeSh(); tabsRender(); };
+const _startWorkSh = startWork; startWork = function(){ _startWorkSh(); shellRender(); };
+const _openProfileSh = openProfile;
+openProfile = async function(cid){ await _openProfileSh(cid); if(!cid && !S.viewAs && S.lastProfile){ S.myAva = S.lastProfile.avatar || ''; shellRender(); } };
+// вікна — між шапкою і «пігулкою»
+setInterval(() => { const tb = $('tabbar'), st = document.documentElement.style;
+  st.setProperty('--vb2', tb && !tb.hidden && isMobile() ? Math.max(0, innerHeight - tb.getBoundingClientRect().top) + 'px' : '0px');
+  const h = document.querySelector('header'); st.setProperty('--vt2', (h ? h.getBoundingClientRect().bottom : 0) + 'px'); }, 400);
+shellRender();
 
 // ── Старт ──
 (function(){
