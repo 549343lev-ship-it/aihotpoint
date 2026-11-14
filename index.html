@@ -571,6 +571,10 @@ body.hasTabs #sideBtn,body.hasTabs #cliBtn,body.hasTabs #repBtn,body.hasTabs #ca
 .pbars div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted)}
 .pbars i{display:block;width:26px;background:var(--brand);border-radius:3px 3px 0 0}
 @media (max-width:420px){.pstats{grid-template-columns:repeat(2,1fr)}}
+
+.pwarn{background:#FFF4E5;border-left:4px solid #E65100;padding:8px 10px;font-size:12.5px;color:#7A3B00;line-height:1.4}
+.pwd{font-family:var(--mono);background:var(--tint);padding:2px 8px;font-size:15px;user-select:all}
+.gbox p{margin:0}
 </style>
 </head>
 <body>
@@ -685,7 +689,7 @@ const $ = id => document.getElementById(id);
 // ТЕСТ: модель MiniMax M3.1 Flash. Ключ MiniMax → напряму api.minimax.io; ключ OpenRouter (sk-or-…) → через openrouter.ai.
 // ── Автооновлення: одне постійне посилання без ?v=. Сторінка сама перевіряє, чи на GitHub не вийшла новіша версія,
 // і тихо перезавантажується (адреса в рядку браузера лишається та сама). При кожному оновленні міняти APP_VER.
-const APP_VER = '2026-11-14.4';
+const APP_VER = '2026-11-14.5';
 (() => {
   const ss = { get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ sessionStorage.setItem(k,v); }catch{} } };
   if(/[?&]r=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
@@ -2570,7 +2574,7 @@ async function openProfile(cidArg){
   S.tab = 'profile';
   const box = viewOpen('<div class="small">Завантажую профіль…</div>');
   const cid = cidArg || S.viewAs?.id || S.ctx.client?.id || S.me?.client?.id || '';
-  let r; try{ r = await API('profile', { client_id:cid }); }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  let r; try{ r = await API('profile', { client_id:cid }); S.lastProfile = r; }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
   const c = r.client, st = r.stats, mg = r.manager || S.me?.manager;
   const months = Object.entries(st.byMonth).sort().slice(-6), max = Math.max(1, ...months.map(([, v]) => v.sum));
   const ava = r.avatar ? `<img src="${r.avatar}" alt="Фото">` : avatarSVG(c.name);
@@ -2640,6 +2644,108 @@ moreMenu = function(){
 // у режимі клієнта об’єкти/запити йдуть від імені обраного клієнта
 const _openClient4 = openClient;
 openClient = function(cid){ return _openClient4(cid || S.viewAs?.id || cid); };
+
+// ══ Вхід з паролем: телефон → (є акаунт: пароль) / (старий акаунт без пароля: пошта + новий пароль) / (новий: реєстрація з паролем) ══
+const PASS_WARN = '<div class="pwarn"><b>Придумайте окремий простий пароль.</b> Не використовуйте пароль від пошти, банку, соцмереж чи телефону! Пароль бачить Ваш менеджер, щоб нагадати його, якщо забудете.</div>';
+mmGate = function(mode){
+  if(mode !== 'register') return _mmGate(mode);
+  let g = document.getElementById('mmGate'); if(!g){ g = document.createElement('div'); g.id = 'mmGate'; document.body.appendChild(g); }
+  g.className = 'gate'; g.removeAttribute('style');
+  const step = (html, onSubmit, focus) => {
+    g.innerHTML = `<form class="gbox" novalidate><div class="eyebrow">Hotpoint.ai · «Гаряча Точка»</div>${html}<div class="err" hidden></div></form>`;
+    const f = g.querySelector('form'), err = f.querySelector('.err'), btn = f.querySelector('button.btn');
+    f.onsubmit = async e => { e.preventDefault(); err.hidden = true; const old = btn.textContent; btn.disabled = true; btn.textContent = 'Зачекайте…';
+      try{ await onSubmit(f); }catch(ex){ err.innerHTML = esc(ex.message || 'Немає з’єднання. Спробуйте ще раз.'); err.hidden = false; btn.disabled = false; btn.textContent = old; } };
+    f.querySelectorAll('[data-back]').forEach(b => b.onclick = () => phoneStep(f.phone?.value || ''));
+    setTimeout(() => (f.querySelector(focus) || f.querySelector('input'))?.focus(), 60);
+    return f;
+  };
+  const done = d => { ls.set('hpuser', { token:d.token, name:d.name, role:d.role }); g.remove(); hideErr(); hpMe(); };
+  const call = async (p, okStatuses = [200]) => { const w = await proxyCall(p); if(w.status === 403 && /закрито/i.test(w.data?.error?.message || '')){ _mmGate('closed'); throw new Error('Доступ закрито'); }
+    if(!okStatuses.includes(w.status)) throw new Error(w.data?.error?.message || 'Помилка ' + w.status); return w.data; };
+  const phoneHidden = ph => `<input type="hidden" name="phone" value="${esc(ph)}">`;
+  function phoneStep(ph){
+    step(`<h2>Вхід або реєстрація</h2><p class="small">Вкажіть свій телефон.</p>
+      <label>Телефон<input name="phone" type="tel" required autocomplete="tel" placeholder="+380…" value="${esc(ph || '')}"></label>
+      <button class="btn">Далі</button>`, async f => {
+      if(f.phone.value.replace(/\D/g, '').length < 9) throw new Error('Вкажіть телефон повністю');
+      const r = await call({ action:'lookup', phone:f.phone.value });
+      if(r.user && r.hasPassword) loginStep(f.phone.value); else if(r.user) claimStep(f.phone.value); else regStep(f.phone.value, r.client);
+    }, 'input[name=phone]');
+  }
+  function loginStep(ph){
+    step(`<h2>З поверненням!</h2><p class="small">Акаунт з телефоном <b>${esc(ph)}</b> уже є — увійдіть з паролем.</p>${phoneHidden(ph)}
+      <label>Пароль<input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn">Увійти</button>
+      <p class="small">Забули пароль? Попросіть його у свого менеджера «Гарячої Точки» або за телефоном <a href="tel:0800305777">0-800-305-777</a>.</p>
+      <button type="button" class="ghost sm" data-back>← Інший телефон</button>`, async f => { done(await call({ action:'login', phone:ph, password:f.password.value })); }, 'input[name=password]');
+  }
+  function claimStep(ph){
+    step(`<h2>Захистіть свій акаунт</h2><p class="small">Акаунт з телефоном <b>${esc(ph)}</b> уже є, але без пароля. Підтвердіть пошту, з якою реєструвались, і придумайте пароль.</p>${phoneHidden(ph)}
+      <label>Пошта<input name="email" type="email" required autocomplete="email"></label>
+      <label>Новий пароль<input name="password" type="text" required autocomplete="new-password" minlength="4"></label>${PASS_WARN}
+      <button class="btn">Зберегти і увійти</button><button type="button" class="ghost sm" data-back>← Інший телефон</button>`,
+      async f => { done(await call({ action:'claim', phone:ph, email:f.email.value, password:f.password.value })); }, 'input[name=email]');
+  }
+  function regStep(ph, known){
+    step(`<h2>${known ? 'Ви вже наш клієнт — створіть вхід' : 'Реєстрація'}</h2>${phoneHidden(ph)}<p class="small">Телефон: <b>${esc(ph)}</b></p>
+      <label>ПІБ<input name="name" required autocomplete="name"></label>
+      <label>Пошта<input name="email" type="email" required autocomplete="email"></label>
+      <label>Дата народження<input name="birth" type="date"></label>
+      <label>Придумайте пароль<input name="password" type="text" required autocomplete="new-password" minlength="4"></label>${PASS_WARN}
+      <details class="survey"><summary>Розкажіть про себе — підбір буде точнішим (необов’язково)</summary>
+        <label>Хто Ви<select name="kind"><option value="">—</option><option>Майстер-сантехнік</option><option>Бригада / монтажна компанія</option><option>Будівельна фірма / забудовник</option><option>Дизайнер / архітектор</option><option>Приватний клієнт (свій ремонт)</option></select></label>
+        <div class="lbl">Що найчастіше робите</div><div class="chips">${['Водопостачання','Каналізація','Опалення','Тепла підлога','Котельня / бойлерна','Чистова сантехніка','Електрика'].map(x => `<label class="chip2"><input type="checkbox" name="works" value="${x}">${x}</label>`).join('')}</div>
+        <div class="lbl">Системи</div><div class="chips">${['PPR пайка','PUSH (натяжна)','Металопласт прес','Нержавійка прес','Мідь'].map(x => `<label class="chip2"><input type="checkbox" name="systems" value="${x}">${x}</label>`).join('')}</div>
+        <label>Улюблені бренди<input name="brands" placeholder="напр.: Ekoplastik, RAFTEC, Grohe"></label>
+        <label>Сегмент<select name="segment"><option value="">—</option><option>Бюджет</option><option>Середній</option><option>Преміум</option><option>Різний — під клієнта</option></select></label>
+        <label>Оплата<select name="pay"><option value="">—</option><option>Готівка / картка</option><option>Безготівка ФОП</option><option>Безготівка ТОВ (з ПДВ)</option></select></label>
+        <label>Скільки об’єктів на місяць<select name="volume"><option value="">—</option><option>1</option><option>2–3</option><option>4–10</option><option>10+</option></select></label>
+        <label>Район / місто об’єктів<input name="district"></label>
+        <label>Зручний зв’язок<select name="channel"><option value="">—</option><option>Viber</option><option>Telegram</option><option>Дзвінок</option></select></label>
+      </details>
+      <button class="btn">Зареєструватися</button><button type="button" class="ghost sm" data-back>← Інший телефон</button>`, async f => {
+      if(f.name.value.trim().length < 3) throw new Error('Вкажіть ПІБ');
+      if(f.password.value.length < 4) throw new Error('Пароль — щонайменше 4 символи');
+      const fd = new FormData(f), survey = { kind:fd.get('kind'), works:fd.getAll('works'), systems:fd.getAll('systems'), brands:fd.get('brands'), segment:fd.get('segment'), pay:fd.get('pay'), volume:fd.get('volume'), district:fd.get('district'), channel:fd.get('channel') };
+      const prefs = [survey.systems.length ? 'Системи: ' + survey.systems.join(', ') : '', survey.brands ? 'Бренди: ' + survey.brands : '', survey.segment ? 'Сегмент: ' + survey.segment : ''].filter(Boolean).join('; ');
+      const w = await proxyCall({ action:'register', phone:ph, name:f.name.value, email:f.email.value, birth:f.birth.value, password:f.password.value, card:hpCard(), profile:{ type:survey.kind, survey, prefs } });
+      if(w.status === 409 && /телефон/i.test(w.data?.error?.message || '')) return loginStep(ph);
+      if(w.status !== 200) throw new Error(w.data?.error?.message || 'Не вдалося зареєструватися');
+      done(w.data);
+    }, 'input[name=name]');
+  }
+  phoneStep('');
+};
+
+// ── Профіль: зміна пароля (клієнт), перегляд пароля (менеджер) ──
+const _openProfile2 = openProfile;
+openProfile = async function(cidArg){
+  await _openProfile2(cidArg);
+  const form = $('pForm'); if(!form) return;
+  const r = S.lastProfile; const blk = document.createElement('div'); blk.className = 'ccard';
+  blk.innerHTML = `<b>Пароль для входу</b>${r?.password !== undefined && !isClient() ? `<div>Пароль клієнта: <code class="pwd">${esc(r.password)}</code> <span class="small">— продиктуйте клієнту, якщо забув</span></div>` : ''}
+    <div class="row"><input id="pNew" type="text" placeholder="Новий пароль (мін. 4 символи)" style="flex:1"><button id="pSet" class="sm">Змінити пароль</button></div>${isClient() ? PASS_WARN : ''}<span class="small" id="pPassOk"></span>`;
+  form.after(blk);
+  $('pSet').onclick = async () => { const v = $('pNew').value.trim(); if(v.length < 4){ $('pPassOk').textContent = 'Щонайменше 4 символи'; return; }
+    try{ await API('profile_save', { client_id:r?.client?.id, profile:{ password:v } }); $('pPassOk').textContent = 'Пароль змінено ✓'; $('pNew').value = ''; const c = blk.querySelector('.pwd'); if(c) c.textContent = v; }catch(e){ $('pPassOk').textContent = e.message; } };
+};
+openProfile = tracked(openProfile);
+const _API0 = API;
+
+// ── Значок вкладки і миготіння: коли ШІ закінчив, а вкладка у фоні ──
+(() => {
+  const F1 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23F2673A'/%3E%3Ccircle cx='32' cy='34' r='17' fill='none' stroke='%23fff' stroke-width='5'/%3E%3Cpath d='M32 34 44 22' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='34' r='4' fill='%23fff'/%3E%3C/svg%3E";
+  const F2 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2322A35A'/%3E%3Cpath d='M18 33l9 9 19-20' fill='none' stroke='%23fff' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+  let link = document.querySelector('link[rel=icon]'); if(!link){ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); } link.href = F1;
+  const t0 = document.title; let timer = null;
+  window.hpBlink = msg => { if(!document.hidden) return; clearInterval(timer); let k = 0;
+    timer = setInterval(() => { k++; document.title = k % 2 ? msg : t0; link.href = k % 2 ? F2 : F1; }, 1000); };
+  document.addEventListener('visibilitychange', () => { if(!document.hidden){ clearInterval(timer); document.title = t0; link.href = F1; } });
+})();
+const _send2 = send;
+send = async function(){ await _send2(); const w = S.chat[S.chat.length - 1]; if(w?.role === 'ai' && !w.typing) hpBlink(w.res ? '✅ Підбір готовий' : '💬 Відповідь готова'); };
+$('send').onclick = send;
 
 // ── Старт ──
 (function(){
